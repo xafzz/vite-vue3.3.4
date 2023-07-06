@@ -6,7 +6,7 @@ let c = 3
 let d = 45
 
 let x = e
-console.log(2387947,e,f,g)
+console.log(764,e,f,g)
 
 export { 
     a,

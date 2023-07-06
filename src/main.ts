@@ -1,6 +1,6 @@
 
 import { a } from '@vue/compiler-sfc'
-import App from './App.vue'
+import CompilerSFC from './compiler-sfc.vue'
 
-console.log(111, a, App.template)
+console.log(2444, a, CompilerSFC.template)
 

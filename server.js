@@ -3,7 +3,7 @@ import Http from 'http'
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io'
 import chokidar from 'chokidar'
-import fs, { readFileSync, statSync,accessSync } from 'fs'
+import fs, { readFileSync, statSync } from 'fs'
 import { resolve } from 'path';
 import { createRequire } from 'module';
 
@@ -43,18 +43,6 @@ function writeImport(content, initUrl) {
                 // returnImport = ` from '${s1.replace(/^(\/ |\.\/)?@(\/)?/,'/@module/')}'`
                 returnImport = s1.replace(/^(\/ |\.\/)?@(\/)?/, '/@module/@')
             } else {
-                /*
-                    App.vue
-
-                    /App.vue
-                    ./App.vue
-
-                    ../App.vue
-                    ./../App.vue
-                    ../App.vue
-                    /../App.vue
-                    ../../App.vue
-                 */
                 //App.vue
                 // 包含 ../ ,有种特殊情况  目录里面点
                 if (isDoubleSpot.test(s1)) {
@@ -100,102 +88,13 @@ function writeImport(content, initUrl) {
                     }
                 }
             }
-            //修改的时候 直接 输出
-            if (!confUrl.getUrl(returnImport)) {
-                confUrl.setUrl(returnImport)
-            }
+            
             return ` from '${returnImport}'`
         } catch (e) {
             //不要打印错误
         }
     })
 }
-//包一下
-function urlCache() {
-    let cached = {}
-    return {
-        setUrl: function (url) {
-            let init = url
-            //后面可以搞个单独的文件 这个文件里面的都是 .vue
-            if (url !== '/' && url !== '/src/main.ts') {
-                //里面有@module
-                if (new RegExp(isOnlyModel).test(url)) {
-                    url = url.replace(isOnlyModel, '/')
-                }
-                //是否包含后缀名 文件名不包含 .
-                let arr = url.split('.')
-                //有 . 就认为是有后缀名的
-                if (arr.length === 1) {
-                    /*
-                        fs.stat 异步
-                        fs.stat(src + url,(err,data)=>{
-                            //如果是文件夹
-                            if( data && data.isDirectory() && !data.isFile() ){
-                                //直接匹配 index.js  或者 index.vue
-                                isExists( url,'/index' )
-                            }else{
-                                isExists( url )
-                            }
-                        })
-                    */
-                    let file
-                    try {
-                        file = '/index'
-                        //文件夹
-                        statSync(src + url)
-                        isExists(url, file)
-                    } catch (e) {
-                        file = ''
-                        //非文件夹
-                        isExists(url, file)
-                    }
-                    //如果object长度为
-                    switch (Object.keys(pathObject[url]).length) {
-                        case 2:
-                            url = pathObject[url]['.js']
-                            break
-                        case 1:
-                            url = pathObject[url][Object.keys(pathObject[url])[0]]
-                            break
-                        // case 0:
-                        //     console.log('\x1b[41;30m 3 Error \x1b[41;37m not found \x1b[40;33m ' + url + file + '.js 或 ' + url + file + '.vue \x1b[0m')
-                        //     break
-                    }
-                }
-                url = '/' + staticRoot + url
-            }
-            cached[init] = url
-
-
-            //检测文件是否存在
-            function isExists(url, file) {
-                let exists = ['.ts', '.js', '.vue']
-                pathObject[url] = Object.create({})
-                // pathObject[url] = Object.create(null)
-                // pathObject[url] = []
-                //感觉像是数组方便 但是 有个问题 当key=0 没有时，key=1 长度有，数组长度为2
-                exists.forEach(ext => {
-                    try {
-                        accessSync(src + url + file + ext, fs.constants.F_OK)
-                        // pathObject[url].push(url + index + ext)
-                        pathObject[url][ext] = url + file + ext
-                    } catch (err) {
-                        // pathObject[url][ext] = false
-                    }
-                })
-            }
-        },
-        getUrl: function (url) {
-            return url
-                ? cached[url] ? cached[url] : ''
-                : cached
-        }
-    }
-}
-
-
-//缓存下
-const confUrl = urlCache()
 
 app.use(async (ctx, next) => {
 
