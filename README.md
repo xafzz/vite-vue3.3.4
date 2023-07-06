@@ -1,19 +1,32 @@
 # vite-vue3.3.4
 
-#### 介绍
 手动敲一遍vue3.3.4,深入了解下源码
 
-#### 软件架构
-软件架构说明
+## 依赖
 
+#### esbuild
 
-#### 安装教程
+[esbuild](https://esbuild.bootcss.com/)
+
+```
+pnpm add esbuild -D 
+```
+
+#### minimist
+
+[minimist](https://github.com/minimistjs/minimist)
+
+```
+pnpm add minimist -D 
+```
 
 1.  xxxx
 2.  xxxx
 3.  xxxx
 
 #### 使用说明
+
+execa
 
 1.  xxxx
 2.  xxxx

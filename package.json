@@ -1,0 +1,36 @@
+{
+  "name": "vite-vue3.3.4",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "packageManager": "pnpm@7.5.2",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "node server.js",
+    "build": "node scripts/dev.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.2",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "chokidar": "^3.5.3",
+    "esbuild": "^0.18.11",
+    "execa": "^7.1.1",
+    "koa": "^2.14.2",
+    "minimist": "^1.2.8",
+    "rollup": "^3.26.1",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "socket.io": "^4.7.1",
+    "typescript": "^5.1.6",
+    "vite": "^4.3.9"
+  }
+}
