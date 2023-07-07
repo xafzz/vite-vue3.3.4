@@ -16,7 +16,7 @@
       "esm-browser"
     ]
   },
-  "devDependencies": {
+  "dependencies": {
     "@babel/parser": "^7.22.6"
   }
 }
