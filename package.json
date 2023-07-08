@@ -14,9 +14,11 @@
     "build": "node scripts/dev.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "xafzz",
   "license": "ISC",
   "dependencies": {
+    "@vue/compiler-core": "workspace:*",
+    "@vue/compiler-dom": "workspace:*",
     "@vue/compiler-sfc": "workspace:*",
     "@vue/shared": "workspace:*"
   },
@@ -28,6 +30,7 @@
     "esbuild": "^0.18.11",
     "execa": "^7.1.1",
     "koa": "^2.14.2",
+    "lru-cache": "^10.0.0",
     "minimist": "^1.2.8",
     "rollup": "^3.26.1",
     "rollup-plugin-esbuild": "^5.0.0",

@@ -1,17 +1,6 @@
-import { e, f, g } from  '@vue/shared'
+import { print } from '@vue/shared'
+export { parse } from './parse'
 
-let a = 1
-let b = 2
-let c = 3
-let d = 45
+const filename = 'compiler-sfc/index.ts'
 
-let x = e
-console.log(764,e,f,g)
-
-export { 
-    a,
-    b,
-    c,
-    x,
-    d
-}
+console.log(print(filename,'start'));

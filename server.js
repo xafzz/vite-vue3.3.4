@@ -30,6 +30,7 @@ const isOnlyLetter = /^([a-zA-Z]+)(\.)?([a-zA-Z]+)?$/
 const isDoubleSpot = /^(\.\/\.\.\/|\.\.\/|\/\.\.\/)/
 //开头包含 ./ /
 const isSlashSpot = /^(\.\/|\/)/
+
 const require = createRequire(import.meta.url)
 
 //处理路径
@@ -44,6 +45,7 @@ function writeImport(content, initUrl) {
                 returnImport = s1.replace(/^(\/ |\.\/)?@(\/)?/, '/@module/@')
             } else {
                 //App.vue
+                console.log(3213,s0,s1)
                 // 包含 ../ ,有种特殊情况  目录里面点
                 if (isDoubleSpot.test(s1)) {
                     //需要先把 ./  /去掉 ,只剩下 ../xx 或者 ../../xxx
@@ -83,8 +85,10 @@ function writeImport(content, initUrl) {
                         // returnImport = ` from '/@module/${s1}'`
                         returnImport = `/@module/${s1}`
                     } else {
+                        // 什么都没有的时候
+                        returnImport = `/@module/${s1}`
                         //其他点情况 都报错
-                        console.log('\x1b[41;30m 2 Error \x1b[41;37m not found \x1b[40;33m ' + s0 + ',' + s1 + ' \x1b[0m')
+                        console.warn('\x1b[41;30m 2 Waring \x1b[40;33m ' + s0 + ' \x1b[0m')
                     }
                 }
             }
@@ -125,14 +129,30 @@ app.use(async (ctx, next) => {
         ctx.body = writeImport(content, newUrl)
 
     } else if (url.indexOf('@module/@') > -1) {
-        let paths = resolve(__dirname, url.replace('@module', 'node_modules').slice(1))
-        //找到node_modules 里面的 package.json
-        // 这个可以再改成其他的
-        let packAge = require(paths + '/package.json').module //.main
-        //拿到里面的内容
-        let content = readFileSync(paths + '/' + packAge, 'utf-8')
-        ctx.type = 'application/javascript'
-        ctx.body = writeImport(content)
+
+        if (url.endsWith('.map')) {
+            // let content = readFileSync(paths, 'utf-8')
+            const urlArray = url.split('\/')
+            const dir = urlArray[urlArray.length - 1].split('.')
+            urlArray.splice(-1, 0, `${dir[0]}/dist`)
+
+            let paths = resolve(__dirname, urlArray.join('/').replace('@module', 'node_modules').slice(1))
+            
+            let content = readFileSync(paths, 'utf-8')
+            ctx.type = 'application/javascript'
+            ctx.body = writeImport(content)
+        } else {
+            let paths = resolve(__dirname, url.replace('@module', 'node_modules').slice(1))
+
+            //找到node_modules 里面的 package.json
+            // 这个可以再改成其他的
+            let packAge = require(paths + '/package.json').module //.main
+            //拿到里面的内容
+            let content = readFileSync(paths + '/' + packAge, 'utf-8')
+            ctx.type = 'application/javascript'
+            ctx.body = writeImport(content)
+        }
+
     } else if (url.indexOf('.vue') > -1) {
         //获取路径
         let p = resolve(__dirname, url.replace('@module', 'src'))
@@ -149,6 +169,34 @@ export default{
     template
 }
         `
+    } else if (url.indexOf('@module/') > -1) { //最后处理例： from 'lru-cache'
+        
+        if (url.endsWith('.map')) {
+            
+            let content = readFileSync(__dirname+resolve(__dirname, url.replace('@module', '')), 'utf-8')
+            
+            ctx.type = 'application/javascript'
+            ctx.body = writeImport(content)
+        } else { 
+            let paths = resolve(__dirname, url.replace('@module', 'node_modules'))
+            //找到node_modules 里面的 package.json
+            // 这个可以再改成其他的
+            let packAge = require(__dirname + paths.slice(1) + '/package.json').module //.main
+            //拿到里面的内容
+            let content = readFileSync(__dirname + paths.slice(1) + packAge.slice(1), 'utf-8')
+            // 如果开启了soureMap 会在最下面加上地址
+
+            if (/\/\/\# sourceMappingURL=/.test(content)) { 
+                const urlages = packAge.slice(1).split('\/')
+                urlages.pop()
+                const p = paths.slice(1) + urlages.join('\/')
+                
+                content = content.replace('# sourceMappingURL=',`# sourceMappingURL=${p}/`)
+            }
+            
+            ctx.type = 'application/javascript'
+            ctx.body = content
+        }
     }
 
     return next();   // 执行后代的代码

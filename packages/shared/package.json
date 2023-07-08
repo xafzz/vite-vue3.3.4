@@ -1,12 +1,9 @@
 {
   "name": "@vue/shared",
   "version": "1.0.0",
-  "description": "",
+  "description": "@vue/shared",
   "main": "index.js",
   "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "buildOptions": {
     "name": "VueShared",
     "formats": [
@@ -14,6 +11,6 @@
       "cjs"
     ]
   },
-  "author": "",
+  "author": "xafzz",
   "license": "ISC"
 }

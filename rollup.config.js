@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { basename, resolve } from 'path';
 import json from '@rollup/plugin-json'
 import esbuild from 'rollup-plugin-esbuild'
-import commonJs from '@rollup/plugin-commonjs';
+import pluginCommonJs from '@rollup/plugin-commonjs';
 import nodeResolve from '@rollup/plugin-node-resolve'
 import ts from 'rollup-plugin-typescript2'
 
@@ -34,7 +34,7 @@ const outputConfigs = {
     format: `cjs`
   },
   global: {
-    file: resolve(packageDir,`dist/${name}.global.js`),
+    file: resolve(packageDir, `dist/${name}.global.js`),
     format: `iife`
   }
 }
@@ -43,13 +43,17 @@ const outputConfigs = {
 function createConfig(format, output) {
 
   output.name = packageOptions.name
-  output.sourcemap = false
+  output.sourcemap = true
 
   return {
     // 入口
     input: resolve(packageDir, `src/index.ts`),
     output,
+    external: [
+      'lru-cache'
+    ],
     plugins: [
+      pluginCommonJs(),
       json(),
       ts({
         tsconfig: resolve(__dirname, 'tsconfig.json'),
@@ -58,8 +62,13 @@ function createConfig(format, output) {
         tsconfig: resolve(__dirname, 'tsconfig.json'),
         sourceMap: output.sourcemap,
         minify: false,
+        define: {
+          __DEV__: 'true',
+          __BROWSER__: 'true',
+          __NUMBER__: '1',
+          __TEST__:'true'
+        }
       }),
-      commonJs(),
       nodeResolve()
     ]
   }

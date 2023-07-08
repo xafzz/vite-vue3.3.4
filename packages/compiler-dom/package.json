@@ -1,0 +1,19 @@
+{
+  "name": "@vue/compiler-dom",
+  "version": "1.0.0",
+  "description": "@vue/compiler-dom",
+  "main": "index.js",
+  "module": "dist/compiler-dom.esm-bundler.js",
+  "author": "xafzz",
+  "license": "ISC",
+  "buildOptions": {
+    "name": "VueCompilerDOM",
+    "compat": true,
+    "formats": [
+      "esm-bundler",
+      "esm-browser",
+      "cjs",
+      "global"
+    ]
+  }
+}
