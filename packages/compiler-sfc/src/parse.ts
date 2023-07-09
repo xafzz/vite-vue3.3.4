@@ -64,7 +64,7 @@ export function hmrShouldReload(
     prevImports,
     next
 ): boolean {
-    console.log(print(currentFilename, 'hmrShouldReload()', [prevImports, next]));
+    console.log(print(currentFilename, 'hmrShouldReload()'),prevImports, next);
 
 
     return false

@@ -7,6 +7,12 @@ const currentFilename = 'compiler-core/ast.ts'
 export const enum Namespaces {
   HTML
 }
+export const enum ConstantTypes {
+  NOT_CONSTANT = 0,
+  CAN_SKIP_PATCH,
+  CAN_HOIST,
+  CAN_STRINGIFY
+}
 
 export const enum NodeTypes {
   ROOT,
@@ -42,6 +48,12 @@ export const enum NodeTypes {
   JS_RETURN_STATEMENT
 }
 
+export interface Position {
+  offset: number // from start of file
+  line: number
+  column: number
+}
+
 // compiler-core/ast.ts 中 createRoot 传参数 传过来了
 export const locStub = {
   // source:'', 注释掉
@@ -49,12 +61,13 @@ export const locStub = {
   end: { line: 1, column: 1, offset: 0 }
 }
 
+
 export function createRoot(
   children,
   loc = locStub
 ) {
 
-  console.log(print(currentFilename, 'createRoot()'),loc)
+  console.log(print(currentFilename, 'createRoot()'), loc)
 
   return {
     type: NodeTypes.ROOT,

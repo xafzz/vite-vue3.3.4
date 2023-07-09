@@ -66,7 +66,8 @@ function createConfig(format, output) {
           __DEV__: 'true',
           __BROWSER__: 'true',
           __NUMBER__: '1',
-          __TEST__:'true'
+          __TEST__: 'true',
+          __COMPAT__: 'true'
         }
       }),
       nodeResolve()

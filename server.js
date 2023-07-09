@@ -184,7 +184,7 @@ export default{
             let packAge = require(__dirname + paths.slice(1) + '/package.json').module //.main
             //拿到里面的内容
             let content = readFileSync(__dirname + paths.slice(1) + packAge.slice(1), 'utf-8')
-            // 如果开启了soureMap 会在最下面加上地址
+            // 如果开启了sourceMap 会在最下面加上地址
 
             if (/\/\/\# sourceMappingURL=/.test(content)) { 
                 const urlages = packAge.slice(1).split('\/')
@@ -230,7 +230,7 @@ watcher.on('ready', () => {
 })
 watcher.on('change', (path) => {
     console.log('change->', path)
-    // todo 可以通过获取文件内容对页面进行局部更新，现在是直接刷新页面
+    
     ioSocket.emit('pageChange', {
         path: path,
         server: true,
