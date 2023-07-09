@@ -1,4 +1,5 @@
-import { extend, print } from "@vue/shared"
+import { extend, hyphenate, print } from "@vue/shared"
+import { BASE_TRANSITION, KEEP_ALIVE, SUSPENSE, TELEPORT } from "./runtimeHelpers"
 
 
 const currentFilename = 'compiler-core/utils.ts'
@@ -57,3 +58,18 @@ export function advancePositionWithMutation(
 
     return pos
 }
+
+export const isBuiltInType = (tag: string, expected: string): boolean =>
+  tag === expected || tag === hyphenate(expected)
+
+export function isCoreComponent(tag: string): symbol | void {
+    if (isBuiltInType(tag, 'Teleport')) {
+      return TELEPORT
+    } else if (isBuiltInType(tag, 'Suspense')) {
+      return SUSPENSE
+    } else if (isBuiltInType(tag, 'KeepAlive')) {
+      return KEEP_ALIVE
+    } else if (isBuiltInType(tag, 'BaseTransition')) {
+      return BASE_TRANSITION
+    }
+  }

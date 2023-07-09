@@ -1,4 +1,4 @@
-<div class="hello  " .stop.prevet="stop" v-bind:title.sync="doc.title" v-if="1" id="ddd"  index-data="dd">hello world</div>
+<div class="hello" .stop.prevet="stop" v-bind:title.sync="doc.title" v-if="1" id="ddd" index-data="dd">hello world</div>
 <template>
     <!-- ddd  -->
 </template>

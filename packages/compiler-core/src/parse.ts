@@ -1,8 +1,9 @@
 import { NO, extend, print } from "@vue/shared"
-import { ConstantTypes, Namespaces, NodeTypes, createRoot } from "./ast"
+import { ConstantTypes, ElementTypes, Namespaces, NodeTypes, createRoot } from "./ast"
 import { ErrorCodes, createCompilerError, defaultOnError, defaultOnWarn } from "./errors"
-import { advancePositionWithClone, advancePositionWithMutation, assert } from "./utils"
-import { CompilerDeprecationTypes, checkCompatEnabled } from "./compat/compatConfig"
+import { advancePositionWithClone, advancePositionWithMutation, assert, isCoreComponent } from "./utils"
+import { CompilerDeprecationTypes, checkCompatEnabled, isCompatEnabled, warnDeprecation } from "./compat/compatConfig"
+import { makeMap } from "packages/shared/src/makeMap"
 
 const currentFilename = 'compiler-core/parse.ts'
 
@@ -64,7 +65,7 @@ export const defaultParserOptions = {
     getTextMode: () => TextModes.DATA,
     isVoidTag: NO,
     isPreTag: NO,
-    isCustomElement: NO,
+    isCustomElement: NO, //自定义元素名称 始终是false
     decodeEntities: (rawText: string): string => rawText.replace( //实体解码
         decodeRE, (_, p1) => decodeMap[p1]
     ),
@@ -74,12 +75,11 @@ export const defaultParserOptions = {
 }
 
 export const enum TextModes {
-    //          | Elements | Entities | End sign              | Inside of
-    DATA, //    | ✔        | ✔        | End tags of ancestors |
-    RCDATA, //  | ✘        | ✔        | End tag of the parent | <textarea>
-    RAWTEXT, // | ✘        | ✘        | End tag of the parent | <style>,<script>
-    CDATA,
-    ATTRIBUTE_VALUE
+    DATA, // mode = 0 ：类型即为元素（包括组件）
+    RCDATA, // mode = 1 ：是在<textarea>标签中的文本
+    RAWTEXT, // mode = 2 ：类型为script、noscript、iframe、style中的代码
+    CDATA, // mode = 3 ：前端比较少接触的'<![CDATA[cdata]]>'代码，这是使用于XML与XHTML中的注释，在该注释中的 cdata 代码将不会被解析器解析，而会当做普通文本处理;
+    ATTRIBUTE_VALUE //mode = 4 ：各个标签的属性；
 }
 
 function getCursor(context) {
@@ -169,7 +169,9 @@ function isEnd(
         case TextModes.DATA: // 0 ?
             // 可能性能不佳
             if (startsWith(s, '</')) {
-                console.log(print(currentFilename, 'isEnd()->TextModes.DATA'), startsWith(s, '</'))
+                // console.log(print(currentFilename, 'isEnd()->TextModes.DATA'), startsWith(s, '</'))
+                console.error('TextModes.DATA');
+
 
             }
             break;
@@ -178,13 +180,14 @@ function isEnd(
         case TextModes.RAWTEXT: {
 
             const parent = last(ancestors)
-            console.log(print(currentFilename, 'isEnd()->TextModes.RCDATA,RAWTEXT'), parent)
+            console.error('TextModes.RCDATA');
             break
         }
 
         case TextModes.CDATA:
             if (startsWith(s, ']]>')) {
-                console.log(print(currentFilename, 'isEnd()->TextModes.CDATA'), startsWith(s, ']]>'))
+                console.error('TextModes.CDATA');
+                // console.log(print(currentFilename, 'isEnd()->TextModes.CDATA'), startsWith(s, ']]>'))
                 return true
             }
             break
@@ -201,19 +204,33 @@ function parseElement(
 
     __TEST__ && assert(/^<[a-z]/i.test(context.source))
 
+    // 标签开始部分
+    // 例：<div class="hello" .stop.prevet="stop" v-bind:title.sync="doc.title" v-if="1" id="ddd" index-data="dd">hello world</div>
+    // 只有 <div class="hello" .stop.prevet="stop" v-bind:title.sync="doc.title" v-if="1" id="ddd" index-data="dd"> 这部分
     const wasInpre = context.inPre
     const wasInPre = context.inVPre
     const parent = last(ancestors)
     const element = parseTag(context, TagType.Start, parent)
+
+    console.log(3242343,element)
 }
 
-// 分析具有该类型（起始标记或结束标记）的标记（例如`<div id=a>`）。
+
+const enum TagType {
+    Start,
+    End
+}
+
+const isSpecialTemplateDirective = /*#__PURE__*/ makeMap(
+    `if,else,else-if,for,slot`
+)
+
+// 生成标签节点。
 function parseTag(
     context,
     type,
     parent
 ) {
-    console.log(print(currentFilename, 'parseTag()'), context, type, parent)
     // __TEST__ && assert(/^<\/?[a-z]]/i.test(context.source))
     __TEST__ && assert(
         type === (startsWith(context.source, '</') ? TagType.End : TagType.Start)
@@ -241,17 +258,115 @@ function parseTag(
 
     // 拿出标签以后 剩余就是属性
     let props = parseAttributes(context, type)
+    // console.log(9999,2,JSON.parse(JSON.stringify(props)))
+
+    // 检查 v-pre
+    if (
+        type === TagType.Start &&
+        !context.inVPre &&
+        props.some(p => p.type === NodeTypes.DIRECTIVE && p.name === 'pre')
+    ) {
+        // 设置 inVPre 为 true
+        context.inVPre = true
+        // reset context 
+        extend(context, cursor)
+        // 回到刚去了标签的时候
+        context.source = currentSource
+        props = parseAttributes(context, type).filter(p => p.name !== 'pre')
+        // console.log(9999,  props);
+    }
+
+    // 自闭合标签
+    // <img src="23213" alt="2323" id="img" class="dd" />
+    let isSelfClosing = false
+    if (context.source.length === 0) {
+        emitError(context, ErrorCodes.EOF_IN_TAG)
+    } else {
+        isSelfClosing = startsWith(context.source, '/>')
+
+        if (type === TagType.End && isSelfClosing) {
+            emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
+        }
+
+        // 妙呀
+        // 如果是单闭合 '/>' 2, 如果是单闭合 '>' 就是1
+        // 如果不是单闭合 现在应该是 <div xxx >刚结束的时候 也是1
+        advanceBy(context, isSelfClosing ? 2 : 1)
+    }
+
+    // type是传过来的值 TagType.Start 怎么可能 根 TagType.End 相等呢？
+    if (type === TagType.End) {
+        return
+    }
+
+    // 兼容2.x
+    if (
+        __COMPAT__ &&
+        __DEV__ &&
+        isCompatEnabled(
+            CompilerDeprecationTypes.COMPILER_V_IF_V_FOR_PRECEDENCE,
+            context
+        )
+    ) {
+        let hasIf = false
+        let hasFor = false
+        for (let i = 0; i < props.length; i++) {
+            const p = props[i]
+            if (p.type === NodeTypes.DIRECTIVE) {
+                if (p.name === 'if') {
+                    hasIf = true
+                } else if (p.name === 'for') {
+                    hasFor = true
+                }
+            }
+            if (hasIf && hasFor) {
+                warnDeprecation(
+                    CompilerDeprecationTypes.COMPILER_V_IF_V_FOR_PRECEDENCE,
+                    context,
+                    getSelection(context, start)
+                )
+                break
+            }
+        }
+    }
 
 
-    console.log(12222, type, 1);
+    let tagType = ElementTypes.ELEMENT
+    // 当前element 不是pre
+    // 重置下节点属性
+    if (!context.inVPre) {
+        if (tag === 'slot') {
+            tagType = ElementTypes.SLOT
+        } else if (tag === 'template') {  //除去开始的<template>
+            if (
+                props.some(
+                    p =>
+                        p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
+                )
+            ) {
+                tagType = ElementTypes.TEMPLATE
+            }
+        } else if (isComponent(tag, props, context)) {
 
+            tagType = ElementTypes.COMPONENT
+        }
+    }
 
+    const result = {
+        type: NodeTypes.ELEMENT,
+        ns,
+        tag,
+        tagType,
+        props,
+        isSelfClosing,
+        children: [],
+        loc: getSelection(context, start),
+        codegenNode: undefined // to be created during transform phase
+    }
+    console.log(print(currentFilename, 'parseTag()'), result)
+    return result
 }
 
-const enum TagType {
-    Start,
-    End
-}
 
 // 读头前进,
 // 整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空
@@ -638,6 +753,33 @@ function parseTextData(
             mode === TextModes.ATTRIBUTE_VALUE
         )
     }
+}
+
+// 是否是组件
+function isComponent(
+    tag: string,
+    props,
+    context
+) {
+    console.log(print(currentFilename, 'isComponent()'))
+
+    const options = context.options
+
+    if (options.isCustomElement(tag)) {
+        return false
+    }
+
+    if (
+        tag === 'component' ||
+        /^[A-Z]/.test(tag) ||
+        isCoreComponent(tag) ||
+        (options.isBuiltInComponent && options.isBuiltInComponent(tag)) ||
+        (options.isNativeTag && !options.isNativeTag(tag))
+    ) {
+        return true
+    }
+
+    // TODO 少了一段
 }
 
 function emitError(

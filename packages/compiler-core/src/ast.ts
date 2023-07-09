@@ -48,6 +48,14 @@ export const enum NodeTypes {
   JS_RETURN_STATEMENT
 }
 
+
+export const enum ElementTypes {
+  ELEMENT, //节点
+  COMPONENT, //注释
+  SLOT, // 插槽
+  TEMPLATE // tempalte
+}
+
 export interface Position {
   offset: number // from start of file
   line: number
