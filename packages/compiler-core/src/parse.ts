@@ -7,6 +7,40 @@ import { makeMap } from "packages/shared/src/makeMap"
 
 const currentFilename = 'compiler-core/parse.ts'
 
+const decodeRE = /&(gt|lt|amp|apos|quot);/g
+const decodeMap: Record<string, string> = {
+    gt: '>',
+    lt: '<',
+    amp: '&',
+    apos: "'",
+    quot: '"'
+}
+
+// 默认上下文属性
+export const defaultParserOptions = {
+    delimiters: [`{{`, `}}`],
+    getNamespace: () => Namespaces.HTML,
+    getTextMode: () => TextModes.DATA,
+    isVoidTag: NO,
+    isPreTag: NO,
+    isCustomElement: NO, //自定义元素名称 始终是false
+    decodeEntities: (rawText: string): string => rawText.replace( //实体解码
+        decodeRE, (_, p1) => decodeMap[p1]
+    ),
+    onError: defaultOnError,
+    onWarn: defaultOnWarn,
+    commits: __DEV__
+}
+
+export const enum TextModes {
+    DATA, // mode = 0 ：类型即为元素（包括组件）
+    RCDATA, // mode = 1 ：是在<textarea>标签中的文本
+    RAWTEXT, // mode = 2 ：类型为script、noscript、iframe、style中的代码,是不是也有div，span？
+    CDATA, // mode = 3 ：前端比较少接触的'<![CDATA[cdata]]>'代码，这是使用于XML与XHTML中的注释，在该注释中的 cdata 代码将不会被解析器解析，而会当做普通文本处理;
+    ATTRIBUTE_VALUE //mode = 4 ：各个标签的属性；
+}
+
+
 export function baseParse(
     content: string,
     options: {}
@@ -47,50 +81,6 @@ function createParserContext(
         inPre: false,
         inVPre: false, //v-pre
         onWarn: options.onWarn
-    }
-}
-
-const decodeRE = /&(gt|lt|amp|apos|quot);/g
-const decodeMap: Record<string, string> = {
-    gt: '>',
-    lt: '<',
-    amp: '&',
-    apos: "'",
-    quot: '"'
-}
-
-// 默认上下文属性
-export const defaultParserOptions = {
-    delimiters: [`{{`, `}}`],
-    getNamespace: () => Namespaces.HTML,
-    getTextMode: () => TextModes.DATA,
-    isVoidTag: NO,
-    isPreTag: NO,
-    isCustomElement: NO, //自定义元素名称 始终是false
-    decodeEntities: (rawText: string): string => rawText.replace( //实体解码
-        decodeRE, (_, p1) => decodeMap[p1]
-    ),
-    onError: defaultOnError,
-    onWarn: defaultOnWarn,
-    commits: __DEV__
-}
-
-export const enum TextModes {
-    DATA, // mode = 0 ：类型即为元素（包括组件）
-    RCDATA, // mode = 1 ：是在<textarea>标签中的文本
-    RAWTEXT, // mode = 2 ：类型为script、noscript、iframe、style中的代码,是不是也有div，span？
-    CDATA, // mode = 3 ：前端比较少接触的'<![CDATA[cdata]]>'代码，这是使用于XML与XHTML中的注释，在该注释中的 cdata 代码将不会被解析器解析，而会当做普通文本处理;
-    ATTRIBUTE_VALUE //mode = 4 ：各个标签的属性；
-}
-
-function getCursor(context) {
-
-    const { column, line, offset } = context
-    console.log(print(currentFilename, 'getCursor()'), { column, line, offset })
-    return {
-        column, //这一行的第几个字符
-        line, //第几行
-        offset //从开头到现在隔了多少个字符，包括空格
     }
 }
 
@@ -207,14 +197,82 @@ function parseChildren(
         }
     }
 
+    // 想vue2一样处理 whitespace
     let removedWhitespace = false
     if (mode !== TextModes.RAWTEXT && mode !== TextModes.RCDATA) {
-        console.error(321321312323);
+        const shouldCondense = context.options.whitespace !== 'preserve'
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i]
+            // '\n'
+            if (node.type === NodeTypes.TEXT) {
+                if (!context.inPre) {
+                    // {type: 2, content: '\n    ', loc: {…}}
+                    if (!/[^\t\r\n\f ]/.test(node.content)) {
+                        const prev = nodes[i - 1]
+                        const next = nodes[i + 1]
 
+                        // 文档： https://cn.vuejs.org/api/application.html#app-config-compileroptions-whitespace
+                        // app.config.compilerOptions.whitespace 用于调整模板中空格的处理行为
+                        // 'condense' | 'preserve'
+
+                        //在以下情况下删除：
+
+                        //-空白是第一个或最后一个节点，或者：
+                        // condense
+                        //空白位于两个注释之间，或者：
+                        //空白位于注释和元素之间，或者：
+                        //空白位于两个元素之间并且包含换行符
+                        if (
+                            !prev ||
+                            !next ||
+                            (shouldCondense &&
+                                ((prev.type === NodeTypes.COMMENT &&
+                                    next.type === NodeTypes.COMMENT) ||
+                                    (prev.type === NodeTypes.COMMENT &&
+                                        next.type === NodeTypes.ELEMENT) ||
+                                    (prev.type === NodeTypes.ELEMENT &&
+                                        next.type === NodeTypes.COMMENT) ||
+                                    (prev.type === NodeTypes.ELEMENT &&
+                                        next.type === NodeTypes.ELEMENT &&
+                                        /[\r\n]/.test(node.content))))
+                        ) {
+                            removedWhitespace = true
+                            // '\r\n  '
+                            nodes[i] = null as any
+                        } else {
+                            // 否则将压缩为一个空格
+                            node.content = ' '
+                        }
+                    } else if (shouldCondense) {
+                        // 在condense模式下, 文本中连续的空白被压缩直到一个单独的空间.
+                        node.content = node.content.replace(/[\t\r\n\f ]+/g, ' ')
+                    }
+                } else {
+                    // #6410 在＜pre＞中规范化窗口换行：
+                    // 在SSR中，浏览器将呈现的服务器\r\n规范化为单个服务器
+                    // 在DOM中
+                    node.content = node.content.replace(/\r\n/g, '\n')
+                }
+            }
+            // 文档：https://cn.vuejs.org/api/application.html#app-config-compileroptions-comments
+            // 用于调整是否移除模板中的 HTML 注释
+            // app.config.compilerOptions.comments
+            else if (node.type === NodeTypes.COMMENT && !context.options.comments) {
+                removedWhitespace = true
+                nodes[i] = null as any
+            }
+        }
+        if (context.inPre && parent && context.options.isPreTag(parent.tag)) {
+            // 根据html规范删除前导换行符
+            const first = nodes[0]
+            if (first && first.type === NodeTypes.TEXT) {
+                first.content = first.content.replace(/^\r?\n/, '')
+            }
+        }
     }
 
     const result = removedWhitespace ? nodes.filter(Boolean) : nodes
-    console.log(print(currentFilename, 'parseChildren()', '编译子标签,while循环字符串模版'), result)
+    console.log(print(currentFilename, 'parseChildren()', 'while循环字符串模版'), result)
     return result
 }
 
@@ -264,8 +322,26 @@ function parseElement(
     console.log(3242343, children)
     console.log(3242343, context)
 
+
+    if (isPreBoundary) {
+        context.inPre = false
+    }
+    if (isVPreBoundary) {
+        context.inVPre = false
+    }
     console.log(print(currentFilename, 'parseElement()', '非单闭合标签'), element)
     return element
+}
+
+function getCursor(context) {
+
+    const { column, line, offset } = context
+    console.log(print(currentFilename, 'getCursor()'), { column, line, offset })
+    return {
+        column, //这一行的第几个字符
+        line, //第几行
+        offset //从开头到现在隔了多少个字符，包括空格
+    }
 }
 
 function pushNode(nodes, node) {
