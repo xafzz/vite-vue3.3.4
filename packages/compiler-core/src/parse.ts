@@ -83,10 +83,14 @@ export const enum TextModes {
 }
 
 function getCursor(context) {
-    console.log(print(currentFilename, 'getCursor()'), context)
 
     const { column, line, offset } = context
-    return { column, line, offset }
+    console.log(print(currentFilename, 'getCursor()'), { column, line, offset })
+    return {
+        column, //这一行的第几个字符
+        line, //第几行
+        offset //从开头到现在隔了多少个字符，包括空格
+    }
 }
 
 // 编译子标签
@@ -131,13 +135,15 @@ function parseChildren(
                     if (startsWith(s, '<!--')) {
                         node = parseComment(context)
                     } else if (startsWith(s, '<!DOCTYPE')) {
-
+                        node = parseBogusComment(context)
                     } else if (startsWith(s, '<![CDATA[')) {
-
+                        // 
+                        console.error(21321323,ns);
+                        
                     } else {
-
+                        emitError(context, ErrorCodes.INCORRECTLY_OPENED_COMMENT)
+                        node = parseBogusComment(context)
                     }
-                    console.error('<!')
                 } else if (s[1] === '/') {
                     console.error('</')
                 } else if (/[a-z]/i.test(s[1])) {
@@ -146,7 +152,7 @@ function parseChildren(
                 } else if (s[1] === '?') {
                     console.error(1111);
                 } else {
-                    console.error(2222);
+                    emitError(context, ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME, 1)
                 }
             }
         }
@@ -867,14 +873,12 @@ function parseComment(context) {
     let content: string
 
     const match = /--(\!)?>/.exec(context.source)
-    console.log(48634131, match)
     // <!-- 这是注释 --
     if (!match) {
         content = context.source.slice(4)
         advanceBy(context, context.source.length)
         emitError(context, ErrorCodes.EOF_IN_COMMENT)
     } else {
-
         // match.index 到 --> 间隔字符的长度
         if (match.index <= 3) {
             emitError(context, ErrorCodes.ABRUPT_CLOSING_OF_EMPTY_COMMENT)
@@ -882,10 +886,8 @@ function parseComment(context) {
         if (match[1]) {
             emitError(context, ErrorCodes.INCORRECTLY_CLOSED_COMMENT)
         }
-
         // <!-- 正好是 4
         content = context.source.slice(4, match.index)
-
         // 嵌套 <!-- <!-- 这是注释 --> -->
         const s = context.source.slice(0, match.index)
         let prevIndex = 1, nestedIndex = 0
@@ -904,6 +906,33 @@ function parseComment(context) {
         loc: getSelection(context, start)
     }
     console.log(print(currentFilename, 'parseComment()'), result)
+    return result
+}
+
+//<!DOCTYPE html>
+function parseBogusComment(context) {
+    __TEST__ && assert(/^<(?:[\!\?]|\/[^a-z>])/i.test(context.source))
+
+    // 拿坐标
+    const start = getCursor(context)
+    const contentStart = context.source[1] === '?' ? 1 : 2
+    let content: string
+
+    const closeIndex = context.source.indexOf('>')
+    if (closeIndex === -1) {
+        content = context.source.slice(contentStart)
+        advanceBy(context, context.source.length)
+    } else {
+        content = context.source.slice(contentStart, closeIndex)
+        advanceBy(context, closeIndex + 1)
+    }
+
+    const result = {
+        type: NodeTypes.COMMENT,
+        content,
+        loc: getSelection(context,start)
+    }
+    console.log(print(currentFilename, 'parseBogusComment()','<!DOCTYPE html>'),result)
     return result
 }
 
