@@ -1,4 +1,4 @@
-import { NO, extend, print } from "@vue/shared"
+import { NO, extend, isArray, print } from "@vue/shared"
 import { ConstantTypes, ElementTypes, Namespaces, NodeTypes, createRoot } from "./ast"
 import { ErrorCodes, createCompilerError, defaultOnError, defaultOnWarn } from "./errors"
 import { advancePositionWithClone, advancePositionWithMutation, assert, isCoreComponent } from "./utils"
@@ -40,12 +40,12 @@ function createParserContext(
     return {
         options,
         column: 1,
-        line: 1,
-        offset: 0,
+        line: 1, //行
+        offset: 0, //偏移量
         originalSource: content,
-        source: content,
+        source: content, //
         inPre: false,
-        inVPre: false,
+        inVPre: false, //v-pre
         onWarn: options.onWarn
     }
 }
@@ -77,7 +77,7 @@ export const defaultParserOptions = {
 export const enum TextModes {
     DATA, // mode = 0 ：类型即为元素（包括组件）
     RCDATA, // mode = 1 ：是在<textarea>标签中的文本
-    RAWTEXT, // mode = 2 ：类型为script、noscript、iframe、style中的代码
+    RAWTEXT, // mode = 2 ：类型为script、noscript、iframe、style中的代码,是不是也有div，span？
     CDATA, // mode = 3 ：前端比较少接触的'<![CDATA[cdata]]>'代码，这是使用于XML与XHTML中的注释，在该注释中的 cdata 代码将不会被解析器解析，而会当做普通文本处理;
     ATTRIBUTE_VALUE //mode = 4 ：各个标签的属性；
 }
@@ -89,17 +89,15 @@ function getCursor(context) {
     return { column, line, offset }
 }
 
+// 编译子标签
 function parseChildren(
     context,
     mode,
     ancestors
 ) {
-    console.log(print(currentFilename, 'parseChildren()'), context, mode, ancestors)
 
+    // <div>xx</div> 循环第一次的时候，xx的parent就是div
     const parent = last(ancestors)
-    if (parent) {
-        console.log(print('有了父级', 'parseChildren()'), parent)
-    }
     // 0
     const ns = parent ? parent.ns : Namespaces.HTML
     const nodes = []
@@ -110,41 +108,93 @@ function parseChildren(
         const s = context.source
         let node = undefined
 
-        console.log(
-            'mode-->', mode, '\n',
-            'TextModes.DATA-->', TextModes.DATA, '\n',
-            'TextModes.RCDATA-->', TextModes.RCDATA, '\n',
-            'TextModes.RAWTEXT-->', TextModes.RAWTEXT, '\n',
-            'TextModes.CDATA-->', TextModes.CDATA, '\n',
-            'TextModes.ATTRIBUTE_VALUE-->', TextModes.ATTRIBUTE_VALUE
-        )
+        // console.log(
+        //     'mode-->', mode, '\n',
+        //     'TextModes.DATA-->', TextModes.DATA, '\n',
+        //     'TextModes.RCDATA-->', TextModes.RCDATA, '\n',
+        //     'TextModes.RAWTEXT-->', TextModes.RAWTEXT, '\n',
+        //     'TextModes.CDATA-->', TextModes.CDATA, '\n',
+        //     'TextModes.ATTRIBUTE_VALUE-->', TextModes.ATTRIBUTE_VALUE
+        // )
 
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
             if (!context.inVPre && startsWith(s, context.options.decodeEntities[0])) {
 
-                console.log(print(currentFilename, 'while'), context.inVPre)
+                console.error(213213213);
+
 
             } else if (mode === TextModes.DATA && s[0] === '<') {
+                // 只有一个<
                 if (s.length === 1) {
-                    console.error('只有一个<?')
+                    console.error('?')
+                    emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 1)
                 } else if (s[1] === '!') {
+                    if (startsWith(s[1], '<!--')) {
+
+                    } else if (startsWith(s[1], '<!DOCTYPE')) {
+
+                    } else if (startsWith(s[1], '<![CDATA[')) {
+
+                    } else {
+
+                    }
                     console.error('<!')
                 } else if (s[1] === '/') {
                     console.error('</')
                 } else if (/[a-z]/i.test(s[1])) {
                     node = parseElement(context, ancestors)
-                    console.log(333, s[1]);
+                    console.error(333, s, node);
+                } else if (s[1] === '?') {
+                    console.error(1111);
+                } else {
+                    console.error(2222);
                 }
-
-
             }
         }
 
-        break
+        // 非节点类型，生成文本节点
+        if (!node) {
+            node = parseText(context, mode)
+        }
+        // 将子节点加入队列
+        if (isArray(node)) {
+            for (let i = 0; i < node.length; i++) {
+                pushNode(nodes, node[i])
+            }
+        } else {
+            // 这里对文本节点做了优化，如果上一节点也为文本节点，NodeTypes.TEXT，将合并两个节点
+            pushNode(nodes, node)
+        }
     }
 
+    let removedWhitespace = false
+    if (mode !== TextModes.RAWTEXT && mode !== TextModes.RCDATA) {
+        console.error(321321312323);
 
+    }
 
+    const result = removedWhitespace ? nodes.filter(Boolean) : nodes
+    console.log(print(currentFilename, 'parseChildren()', '编译子标签,while循环字符串模版'), result)
+    return result
+}
+
+function pushNode(nodes, node) {
+    if (node.type === NodeTypes.TEXT) {
+        const prev = last(nodes)
+        // 如果此节点根上一个节点都是文本，并且是连续的，则进行合并
+        if (
+            prev &&
+            prev.type === NodeTypes.TEXT &&
+            prev.loc.end.offset === node.loc.start.offset
+        ) {
+            prev.content += node.content
+            prev.loc.end = node.loc.end
+            prev.loc.source += node.loc.source
+            return
+        }
+    }
+    nodes.push(node)
+    console.log(print(currentFilename, 'pushNode()', '塞入数组nodes'), nodes)
 }
 
 function last(xs) {
@@ -155,52 +205,10 @@ function startsWith(source: string, searchString: string): boolean {
     return source.startsWith(searchString)
 }
 
-// 是否读取结束
-function isEnd(
-    context,
-    mode,
-    ancestors
-): boolean {
-    console.log(print(currentFilename, 'isEnd()'), context, mode, ancestors)
-
-    // 拿到vue内容
-    const s = context.source
-    switch (mode) {
-        case TextModes.DATA: // 0 ?
-            // 可能性能不佳
-            if (startsWith(s, '</')) {
-                // console.log(print(currentFilename, 'isEnd()->TextModes.DATA'), startsWith(s, '</'))
-                console.error('TextModes.DATA');
-
-
-            }
-            break;
-
-        case TextModes.RCDATA:
-        case TextModes.RAWTEXT: {
-
-            const parent = last(ancestors)
-            console.error('TextModes.RCDATA');
-            break
-        }
-
-        case TextModes.CDATA:
-            if (startsWith(s, ']]>')) {
-                console.error('TextModes.CDATA');
-                // console.log(print(currentFilename, 'isEnd()->TextModes.CDATA'), startsWith(s, ']]>'))
-                return true
-            }
-            break
-    }
-
-    return !s
-}
-
 function parseElement(
     context,
     ancestors
 ) {
-    console.log(print(currentFilename, 'parseElement()'), context, ancestors)
 
     __TEST__ && assert(/^<[a-z]/i.test(context.source))
 
@@ -210,9 +218,41 @@ function parseElement(
     const wasInpre = context.inPre
     const wasInPre = context.inVPre
     const parent = last(ancestors)
+    // 从parseTag 
     const element = parseTag(context, TagType.Start, parent)
+    const isPreBoundary = context.inPre && !wasInPre
+    const isVPreBoundary = context.inVPre && !wasInPre //v-pre
 
-    console.log(3242343,element)
+    // isVoidTag 这个玩意不是始终返回false吗
+    if (context.options.isVoidTag(element.tag)) {
+        console.error('isVoidTag 返回 true 了');
+    }
+
+    // 如果是自闭合的标签 不需要提取标签内的文本内容，
+    // 直接返回element
+    if (element.isSelfClosing || context.options.isVoidTag(element.tag)) {
+        // 自闭合的<pre>标签
+        if (isPreBoundary) {
+            context.inPre = false
+        }
+        // v-pre
+        if (isVPreBoundary) {
+            context.inPre = false
+        }
+        console.log(print(currentFilename, 'parseElement()', '单闭合标签直接返回'), element)
+        return element
+    }
+
+    ancestors.push(element)
+    // compiler-sfc parse getTextMode
+    const mode = context.options.getTextMode(element, parent)
+    const children = parseChildren(context, mode, ancestors)
+
+    console.log(3242343, children)
+    console.log(3242343, context)
+
+    console.log(print(currentFilename, 'parseElement()', '非单闭合标签'), element)
+    return element
 }
 
 
@@ -347,7 +387,7 @@ function parseTag(
                 tagType = ElementTypes.TEMPLATE
             }
         } else if (isComponent(tag, props, context)) {
-
+            // TODO component 应该指的是 动态组件一类
             tagType = ElementTypes.COMPONENT
         }
     }
@@ -367,11 +407,9 @@ function parseTag(
     return result
 }
 
-
 // 读头前进,
 // 整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空
 function advanceBy(context, numberOfCharacters) {
-    console.log(print(currentFilename, 'advanceBy()', '整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空，while停止'))
 
     const { source } = context
     // 标签要比模版字符串要长
@@ -379,6 +417,7 @@ function advanceBy(context, numberOfCharacters) {
     advancePositionWithMutation(context, source, numberOfCharacters)
     // 移除已知的部分 第一次移除 <template || <style || <script
     context.source = source.slice(numberOfCharacters)
+    console.log(print(currentFilename, 'advanceBy()', '整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空，while停止'),context.source)
 }
 
 // 对 \\t\\r\\n\\f 还有''删掉
@@ -730,6 +769,44 @@ function parseAttributeValue(context) {
     return result
 }
 
+// 生成文本节点
+function parseText(
+    context,
+    mode
+) {
+    __TEST__ && assert(context.source.length > 0)
+
+    const endTokens = mode === TextModes.CDATA ? [']]>'] : ['<', context.options.delimiters[0]]
+    let endIndex = context.source.length
+    /**
+     * 1、<div>hello</div>
+     * 检测 context.source 到 '<' 就是 文本字符串的长度
+     * 2、<div>{{hello}}</div>
+     * indexOf(endTokens[i],1),第二个参数1的原因 还是拿到 <
+     */
+    for (let i = 0; i < endTokens.length; i++) {
+        const index = context.source.indexOf(endTokens[i], 1)
+        if (index !== -1 && endIndex > index) {
+            endIndex = index
+        }
+    }
+
+    __TEST__ && assert(endIndex > 0)
+
+    const start = getCursor(context)
+    const content = parseTextData(context, endIndex, mode)
+
+    const result = {
+        type: NodeTypes.TEXT,
+        content,
+        loc: getSelection(context, start)
+    }
+
+    console.log(print(currentFilename, 'parseText()', '生成文本节点'), result)
+    return result
+
+}
+
 // 提取文本数据
 function parseTextData(
     context,
@@ -839,5 +916,68 @@ function getNewPosition(
         numberOfCharacters
     )
     console.log(print(currentFilename, 'getNewPosition()', '生成新位置信息对象'), result)
+    return result
+}
+
+
+
+
+// 是否读取结束
+function isEnd(
+    context,
+    mode,
+    ancestors
+): boolean {
+    console.log(print(currentFilename, 'isEnd()'), context, mode, ancestors)
+
+    // 拿到vue内容
+    const s = context.source
+    switch (mode) {
+        case TextModes.DATA: // 0 
+            // 可能性能不佳 结束标签
+            if (startsWith(s, '</')) {
+                for (let i = ancestors.length - 1; i >= 0; --i) {
+                    if (startsWithEndTagOpen(s, ancestors[i].tag)) {
+                        return true
+                    }
+                }
+            }
+            break;
+
+        // 标签内的text <div>xxx</div>
+        case TextModes.RCDATA:
+        case TextModes.RAWTEXT: {
+            // 父级就是对应 ancestors 最后一个 元素
+            const parent = last(ancestors)
+            // 是否有父级 是否以结束标签开始
+            if (parent && startsWithEndTagOpen(s, parent.tag)) {
+                return true
+            }
+            break
+        }
+
+        case TextModes.CDATA:
+            if (startsWith(s, ']]>')) {
+                console.error('TextModes.CDATA');
+                // console.log(print(currentFilename, 'isEnd()->TextModes.CDATA'), startsWith(s, ']]>'))
+                return true
+            }
+            break
+    }
+
+    return !s
+}
+
+// 是否以结束标签开头
+function startsWithEndTagOpen(
+    source,
+    tag
+) {
+    const result = (
+        startsWith(source, '</') &&
+        source.slice(2, 2 + tag.length).toLowerCase() === tag.toLowerCase() &&
+        /[\t\r\n\f />]/.test(source[2 + tag.length] || '>')
+    )
+    console.log(print(currentFilename, 'startsWithEndTagOpen()', '是否以结束标签开头'), result)
     return result
 }

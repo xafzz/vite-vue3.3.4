@@ -1,6 +1,8 @@
 import { print } from '@vue/shared'
 import * as CompilerDom from '@vue/compiler-dom'
 import { createCache } from './cache'
+import { NodeTypes } from '@vue/compiler-core'
+import { TextModes } from 'packages/compiler-core/src/parse'
 
 
 const currentFilename = 'compiler-sfc/parse.ts'
@@ -49,7 +51,27 @@ export function parse(
         isNativeTag: () => true,
         isPreTag: () => true,
         getTextMode: ({ tag, props }, parent) => {
-            console.log(print(currentFilename, 'getTextMode()'), { tag, props }, parent);
+            if (
+                (!parent && tag !== 'template') ||
+                (
+                    tag === 'template' &&
+                    // 有一个条件满足 class
+                    props.some(p => {
+                        return p.type === NodeTypes.ATTRIBUTE &&
+                            p.name === 'lang' &&
+                            p.value &&
+                            p.value.content &&
+                            p.value.content !== 'html'
+                    })
+                )
+            ) {
+                console.log(print(currentFilename, 'getTextMode()',`2->${tag}`),props);
+                return TextModes.RAWTEXT
+            } else { 
+                console.log(print(currentFilename, 'getTextMode()',`0->${tag}`));
+                return TextModes.DATA
+            }
+
         },
         onError: (e: SyntaxError) => {
             errors.push(e)

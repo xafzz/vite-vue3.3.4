@@ -5,6 +5,8 @@ export const extend = Object.assign
 // 始终是false
 export const NO = () => false
 
+export const isArray = Array.isArray
+
 
 const cacheStringFunction =(fn) => {
     const cache: Record<string, string> = Object.create(null)
