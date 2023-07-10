@@ -26,6 +26,7 @@ export function advancePositionWithClone(
 
 //通过突变而不进行克隆（出于性能原因），因为
 //在解析器中被调用很多
+// 变更坐标
 export function advancePositionWithMutation(
   pos,
   source,
@@ -54,7 +55,7 @@ export function advancePositionWithMutation(
       ? pos.column + numberOfCharacters
       : numberOfCharacters - lastNewLinePos
 
-  console.log(print(currentFilename, 'advancePostionWithMutation()'), pos)
+  console.log(print(currentFilename, 'advancePostionWithMutation()','变更坐标->'), pos)
   return pos
 }
 

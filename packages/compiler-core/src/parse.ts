@@ -59,6 +59,7 @@ const decodeMap: Record<string, string> = {
     quot: '"'
 }
 
+// 默认上下文属性
 export const defaultParserOptions = {
     delimiters: [`{{`, `}}`],
     getNamespace: () => Namespaces.HTML,
@@ -112,21 +113,11 @@ function parseChildren(
         const s = context.source
         let node = undefined
 
-        // console.log(
-        //     'mode-->', mode, '\n',
-        //     'TextModes.DATA-->', TextModes.DATA, '\n',
-        //     'TextModes.RCDATA-->', TextModes.RCDATA, '\n',
-        //     'TextModes.RAWTEXT-->', TextModes.RAWTEXT, '\n',
-        //     'TextModes.CDATA-->', TextModes.CDATA, '\n',
-        //     'TextModes.ATTRIBUTE_VALUE-->', TextModes.ATTRIBUTE_VALUE
-        // )
-
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
-            if (!context.inVPre && startsWith(s, context.options.decodeEntities[0])) {
-
-                console.error(213213213);
-
-
+            // 不是 v-pre 并且 存在 {{
+            if (!context.inVPre && startsWith(s, context.options.delimiters[0])) {
+                // 生成动态数据节点 {{ 
+                node = parseInterpolation(context, mode)
             } else if (mode === TextModes.DATA && s[0] === '<') {
                 // 只有一个<
                 if (s.length === 1) {
@@ -137,20 +128,64 @@ function parseChildren(
                     } else if (startsWith(s, '<!DOCTYPE')) {
                         node = parseBogusComment(context)
                     } else if (startsWith(s, '<![CDATA[')) {
-                        // 
-                        console.error(21321323,ns);
-                        
+
+
+                        if (ns !== Namespaces.HTML) {
+                            node = parseCDATA(context, ancestors)
+                        } else {
+                            emitError(context, ErrorCodes.CDATA_IN_HTML_CONTENT)
+                            node = parseBogusComment(context)
+                        }
+
                     } else {
                         emitError(context, ErrorCodes.INCORRECTLY_OPENED_COMMENT)
                         node = parseBogusComment(context)
                     }
                 } else if (s[1] === '/') {
-                    console.error('</')
-                } else if (/[a-z]/i.test(s[1])) {
+                    if (s.length === 2) {
+                        emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 2)
+                    } else if (s[2] === '>') {
+                        emitError(context, ErrorCodes.MISSING_END_TAG_NAME, 2)
+                        advanceBy(context, 3)
+                        continue
+                    } else if (/[a-z]/i.test(s[2])) {
+                        emitError(context, ErrorCodes.X_INVALID_END_TAG)
+                        parseTag(context, TagType.End, parent)
+                        continue
+                    } else {
+                        emitError(context, ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME, 2)
+                        node = parseBogusComment(context)
+                    }
+                } else if (/[a-z]/i.test(s[1])) { //这才是正文
                     node = parseElement(context, ancestors)
-                    console.error(333, s, node);
+
+                    // 兼容 vue2.X
+                    if (
+                        __COMPAT__ &&
+                        isCompatEnabled(
+                            CompilerDeprecationTypes.COMPILER_NATIVE_TEMPLATE,
+                            context
+                        ) && node &&
+                        node.tag === 'template' &&
+                        !node.props.some(
+                            p =>
+                                p.type === NodeTypes.DIRECTIVE &&
+                                isSpecialTemplateDirective(p.name)
+                        )
+                    ) {
+                        __DEV__ &&
+                            warnDeprecation(
+                                CompilerDeprecationTypes.COMPILER_NATIVE_TEMPLATE,
+                                context,
+                                node.loc
+                            )
+                        node = node.children
+                    }
                 } else if (s[1] === '?') {
-                    console.error(1111);
+
+                    emitError(context, ErrorCodes.UNEXPECTED_QUESTION_MARK_INSTEAD_OF_TAG_NAME, 1)
+                    node = parseBogusComment(context)
+
                 } else {
                     emitError(context, ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME, 1)
                 }
@@ -232,7 +267,6 @@ function parseElement(
     console.log(print(currentFilename, 'parseElement()', '非单闭合标签'), element)
     return element
 }
-
 
 function pushNode(nodes, node) {
     if (node.type === NodeTypes.TEXT) {
@@ -419,6 +453,7 @@ function advanceBy(context, numberOfCharacters) {
     const { source } = context
     // 标签要比模版字符串要长
     __TEST__ && assert(numberOfCharacters <= source.length)
+    // 变更坐标
     advancePositionWithMutation(context, source, numberOfCharacters)
     // 移除已知的部分 第一次移除 <template || <style || <script
     context.source = source.slice(numberOfCharacters)
@@ -774,6 +809,60 @@ function parseAttributeValue(context) {
     return result
 }
 
+// 动态数据节点
+function parseInterpolation(context, mode) {
+    const [open, close] = context.options.delimiters
+    __TEST__ && assert(startsWith(context.source, open))
+
+    const closeIndex = context.source.indexOf(close, open.length)
+    if (closeIndex === -1) {
+        emitError(context, ErrorCodes.X_MISSING_INTERPOLATION_END)
+        return undefined
+    }
+
+    // 例： {{ xx }}
+    const start = getCursor(context)
+    // 移动 {{ 的长度 就剩下  ' xx }}'
+    advanceBy(context, open.length)
+    // {{ }} 内 xx 的位置
+    const innerStart = getCursor(context)
+    const innerEnd = getCursor(context)
+    // 总长度 closeIndex,减去 }} 的长度
+    const rawContentLength = closeIndex - close.length
+    // 剩下的就是内容
+    const rawContent = context.source.slice(0, rawContentLength)
+    // 到这为止 rawContent === preTrimContent
+    const preTrimContent = parseTextData(context, rawContentLength, mode)
+
+    // 有空格需要删除
+    const content = preTrimContent.trim()
+    const startOffset = preTrimContent.indexOf(content)
+    // 当 {{ xx }} 存在空格，
+    if (startOffset > 0) {
+        advancePositionWithMutation(innerStart, rawContent, startOffset)
+    }
+
+    const endOffset = rawContentLength - (preTrimContent.length - content.length - startOffset)
+    advancePositionWithMutation(innerEnd, rawContent, endOffset)
+    // 移动 }} 的长度 
+    advanceBy(context, close.length)
+
+    const result = {
+        type: NodeTypes.INTERPOLATION,
+        content: {
+            type: NodeTypes.SIMPLE_EXPRESSION,
+            isStatic: false,
+            // 默认情况下，将“isConstant”设置为false，并将在transformExpression中决定
+            constType: ConstantTypes.NOT_CONSTANT,
+            content,
+            loc: getSelection(context, innerStart, innerEnd)
+        },
+        loc: getSelection(context, start)
+    }
+    console.log(print(currentFilename, 'parseInterpolation()', '动态数据节点{{}}'), result)
+    return result
+}
+
 // 生成文本节点
 function parseText(
     context,
@@ -930,10 +1019,30 @@ function parseBogusComment(context) {
     const result = {
         type: NodeTypes.COMMENT,
         content,
-        loc: getSelection(context,start)
+        loc: getSelection(context, start)
     }
-    console.log(print(currentFilename, 'parseBogusComment()','<!DOCTYPE html>'),result)
+    console.log(print(currentFilename, 'parseBogusComment()', '<!DOCTYPE html>'), result)
     return result
+}
+
+//生成CDATA节点
+function parseCDATA(context, ancestors) {
+
+    __TEST__ &&
+        assert(last(ancestors) == null || last(ancestors)!.ns !== Namespaces.HTML)
+    __TEST__ && assert(startsWith(context.source, '<![CDATA['))
+
+    advanceBy(context, 9)
+    const nodes = parseChildren(context, TextModes.CDATA, ancestors)
+    if (context.source.length === 0) {
+        emitError(context, ErrorCodes.EOF_IN_CDATA)
+    } else {
+        __TEST__ && assert(startsWith(context.source, ']]>'))
+        advanceBy(context, 3)
+    }
+
+    console.log(print(currentFilename, 'parseCDATA()', '生成CDATA节点'), nodes, ancestors)
+    return nodes
 }
 
 function emitError(
