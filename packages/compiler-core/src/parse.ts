@@ -126,14 +126,13 @@ function parseChildren(
             } else if (mode === TextModes.DATA && s[0] === '<') {
                 // 只有一个<
                 if (s.length === 1) {
-                    console.error('?')
                     emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 1)
                 } else if (s[1] === '!') {
-                    if (startsWith(s[1], '<!--')) {
+                    if (startsWith(s, '<!--')) {
+                        node = parseComment(context)
+                    } else if (startsWith(s, '<!DOCTYPE')) {
 
-                    } else if (startsWith(s[1], '<!DOCTYPE')) {
-
-                    } else if (startsWith(s[1], '<![CDATA[')) {
+                    } else if (startsWith(s, '<![CDATA[')) {
 
                     } else {
 
@@ -176,33 +175,6 @@ function parseChildren(
     const result = removedWhitespace ? nodes.filter(Boolean) : nodes
     console.log(print(currentFilename, 'parseChildren()', '编译子标签,while循环字符串模版'), result)
     return result
-}
-
-function pushNode(nodes, node) {
-    if (node.type === NodeTypes.TEXT) {
-        const prev = last(nodes)
-        // 如果此节点根上一个节点都是文本，并且是连续的，则进行合并
-        if (
-            prev &&
-            prev.type === NodeTypes.TEXT &&
-            prev.loc.end.offset === node.loc.start.offset
-        ) {
-            prev.content += node.content
-            prev.loc.end = node.loc.end
-            prev.loc.source += node.loc.source
-            return
-        }
-    }
-    nodes.push(node)
-    console.log(print(currentFilename, 'pushNode()', '塞入数组nodes'), nodes)
-}
-
-function last(xs) {
-    return xs[xs.length - 1]
-}
-
-function startsWith(source: string, searchString: string): boolean {
-    return source.startsWith(searchString)
 }
 
 function parseElement(
@@ -255,6 +227,33 @@ function parseElement(
     return element
 }
 
+
+function pushNode(nodes, node) {
+    if (node.type === NodeTypes.TEXT) {
+        const prev = last(nodes)
+        // 如果此节点根上一个节点都是文本，并且是连续的，则进行合并
+        if (
+            prev &&
+            prev.type === NodeTypes.TEXT &&
+            prev.loc.end.offset === node.loc.start.offset
+        ) {
+            prev.content += node.content
+            prev.loc.end = node.loc.end
+            prev.loc.source += node.loc.source
+            return
+        }
+    }
+    nodes.push(node)
+    console.log(print(currentFilename, 'pushNode()', '塞入数组nodes'), nodes)
+}
+
+function last(xs) {
+    return xs[xs.length - 1]
+}
+
+function startsWith(source: string, searchString: string): boolean {
+    return source.startsWith(searchString)
+}
 
 const enum TagType {
     Start,
@@ -417,7 +416,7 @@ function advanceBy(context, numberOfCharacters) {
     advancePositionWithMutation(context, source, numberOfCharacters)
     // 移除已知的部分 第一次移除 <template || <style || <script
     context.source = source.slice(numberOfCharacters)
-    console.log(print(currentFilename, 'advanceBy()', '整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空，while停止'),context.source)
+    console.log(print(currentFilename, 'advanceBy()', '整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空，while停止'), context.source)
 }
 
 // 对 \\t\\r\\n\\f 还有''删掉
@@ -859,6 +858,55 @@ function isComponent(
     // TODO 少了一段
 }
 
+// 注释
+function parseComment(context) {
+    __TEST__ && assert(startsWith(context.source, '<!--'))
+
+    //拿坐标
+    const start = getCursor(context)
+    let content: string
+
+    const match = /--(\!)?>/.exec(context.source)
+    console.log(48634131, match)
+    // <!-- 这是注释 --
+    if (!match) {
+        content = context.source.slice(4)
+        advanceBy(context, context.source.length)
+        emitError(context, ErrorCodes.EOF_IN_COMMENT)
+    } else {
+
+        // match.index 到 --> 间隔字符的长度
+        if (match.index <= 3) {
+            emitError(context, ErrorCodes.ABRUPT_CLOSING_OF_EMPTY_COMMENT)
+        }
+        if (match[1]) {
+            emitError(context, ErrorCodes.INCORRECTLY_CLOSED_COMMENT)
+        }
+
+        // <!-- 正好是 4
+        content = context.source.slice(4, match.index)
+
+        // 嵌套 <!-- <!-- 这是注释 --> -->
+        const s = context.source.slice(0, match.index)
+        let prevIndex = 1, nestedIndex = 0
+        while ((nestedIndex = s.indexOf('<!--', prevIndex)) !== -1) {
+            advanceBy(context, nestedIndex - prevIndex + 1)
+            if (nestedIndex + 4 < s.length) {
+                emitError(context, ErrorCodes.NESTED_COMMENT)
+            }
+            prevIndex = nestedIndex + 1
+        }
+        advanceBy(context, match.index + match[0].length - prevIndex + 1)
+    }
+    const result = {
+        type: NodeTypes.COMMENT,
+        content,
+        loc: getSelection(context, start)
+    }
+    console.log(print(currentFilename, 'parseComment()'), result)
+    return result
+}
+
 function emitError(
     context,
     code,
@@ -918,9 +966,6 @@ function getNewPosition(
     console.log(print(currentFilename, 'getNewPosition()', '生成新位置信息对象'), result)
     return result
 }
-
-
-
 
 // 是否读取结束
 function isEnd(
