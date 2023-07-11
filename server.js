@@ -45,7 +45,6 @@ function writeImport(content, initUrl) {
                 returnImport = s1.replace(/^(\/ |\.\/)?@(\/)?/, '/@module/@')
             } else {
                 //App.vue
-                console.log(3213,s0,s1)
                 // 包含 ../ ,有种特殊情况  目录里面点
                 if (isDoubleSpot.test(s1)) {
                     //需要先把 ./  /去掉 ,只剩下 ../xx 或者 ../../xxx
@@ -80,7 +79,7 @@ function writeImport(content, initUrl) {
                         s1 = initUrl + s1.replace(isSlashSpot, '/')
 
                         // returnImport = ` from '${s1.replace(staticRoot,'@module')}'`
-                        returnImport = s1.replace(staticRoot, '@module')
+                        returnImport = s1
                     } else if (isOnlyLetter.test(s1)) {
                         // returnImport = ` from '/@module/${s1}'`
                         returnImport = `/@module/${s1}`
@@ -111,6 +110,7 @@ app.use(async (ctx, next) => {
         ctx.type = 'text/html'
         ctx.body = content
     } else if (url.endsWith('.ts') || url.endsWith('.js')) {
+        console.log(654656,url)
         // 路径
         const paths = resolve(__dirname, url.slice(1))
         // 获取ts内容
