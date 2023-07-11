@@ -54,8 +54,10 @@ importers:
       '@babel/parser': ^7.22.6
       '@types/lru-cache': ^7.10.10
       lru-cache: ^10.0.0
+      source-map-js: ^1.0.2
     dependencies:
       '@babel/parser': registry.npmmirror.com/@babel/parser/7.22.6
+      source-map-js: registry.npmmirror.com/source-map-js/1.0.2
     devDependencies:
       '@types/lru-cache': registry.npmmirror.com/@types/lru-cache/7.10.10
       lru-cache: registry.npmmirror.com/lru-cache/10.0.0
@@ -1541,6 +1543,13 @@ packages:
       - supports-color
       - utf-8-validate
     dev: true
+
+  registry.npmmirror.com/source-map-js/1.0.2:
+    resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/source-map-js/-/source-map-js-1.0.2.tgz}
+    name: source-map-js
+    version: 1.0.2
+    engines: {node: '>=0.10.0'}
+    dev: false
 
   registry.npmmirror.com/statuses/1.5.0:
     resolution: {integrity: sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/statuses/-/statuses-1.5.0.tgz}

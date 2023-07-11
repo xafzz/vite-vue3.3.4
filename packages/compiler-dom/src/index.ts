@@ -6,9 +6,8 @@ import { parserOptions } from "./parserOptions"
 const currentFilename = 'compiler-dom/index.ts'
 
 export function parse(template: string, options: any = {}) {
-    console.log(print(currentFilename,'parse()'), template)
 
-    return baseParse(
+    const result = baseParse(
         template,
         extend(
             {},
@@ -16,4 +15,6 @@ export function parse(template: string, options: any = {}) {
             options
         )
     )
+    console.log(print(currentFilename,'compoiler-dem-parse()'), result)
+    return result
 }

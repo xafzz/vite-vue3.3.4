@@ -1,20 +1,26 @@
 <template>
-    <pre>ddddd</pre>
-    <!-- 2222 -->
-    <div class="hello" id="ddd" index-data="dd">{{ ddd }}</div>
+  <div>
+    <p>hello</p>
+  </div>
 </template>
 
 <script setup lang="ts">
- 
-console.log(1)
-    
+const theme = {
+  color: 'red',
+  width: '100px'
+}
 </script>
 
-
-<style lang="less" scoped>
+<style scoped>
 div{
-    width: 100px;
-    height: 100px;
-    background: red;
+  width: v-bind('theme.width');
+}
+p {
+  color: v-bind('theme.color');
+}
+
+/* 插槽选择器 */
+:slotted(div) {
+  color: red;
 }
 </style>

@@ -40,28 +40,26 @@ export const enum TextModes {
     ATTRIBUTE_VALUE //mode = 4 ：各个标签的属性；
 }
 
-
+// 编译入口
 export function baseParse(
     content: string,
     options: {}
 ): any {
-
-    console.log(print(currentFilename, 'baseParse()'), content, options)
-
     const context = createParserContext(content, options)
+    // 搞坐标
     const start = getCursor(context)
-    return createRoot(
+    const result = createRoot(
         parseChildren(context, TextModes.DATA, []),
         getSelection(context, start)
     )
+    console.log(print(currentFilename, 'baseParse()', '编译入口'), result)
+    return result
 }
-
+// 初始化编译上下文并合并options
 function createParserContext(
     content: string,
     rawOptions: any
 ) {
-    console.log(print(currentFilename, 'createParserContext()'), defaultParserOptions)
-
     const options = extend({}, defaultParserOptions)
 
     for (let key in rawOptions) {
@@ -70,8 +68,7 @@ function createParserContext(
                 ? defaultParserOptions[key]
                 : rawOptions[key]
     }
-
-    return {
+    const result = {
         options,
         column: 1,
         line: 1, //行
@@ -82,6 +79,8 @@ function createParserContext(
         inVPre: false, //v-pre
         onWarn: options.onWarn
     }
+    console.log(print(currentFilename, 'createParserContext()', '初始化编译上下文并合并options'), result)
+    return result
 }
 
 // 编译子标签
@@ -314,14 +313,51 @@ function parseElement(
         return element
     }
 
+    // children
     ancestors.push(element)
     // compiler-sfc parse getTextMode
     const mode = context.options.getTextMode(element, parent)
     const children = parseChildren(context, mode, ancestors)
 
-    console.log(3242343, children)
-    console.log(3242343, context)
+    // 2.x 
+    if (__COMPAT__) {
+        const inlineTemplateProp = element.props.find(
+            p => p.type === NodeTypes.ATTRIBUTE && p.name === 'inline-template'
+        )
+        if (
+            inlineTemplateProp &&
+            checkCompatEnabled(
+                CompilerDeprecationTypes.COMPILER_INLINE_TEMPLATE,
+                context,
+                inlineTemplateProp.loc
+            )
+        ) {
+            const loc = getSelection(context, element.loc.end)
+            inlineTemplateProp.value = {
+                type: NodeTypes.TEXT,
+                content: loc.source,
+                loc
+            }
+        }
+    }
+    // 合体吧
+    element.children = children
 
+    // 结束标签 
+    // template style script 都搞到了
+    if (startsWithEndTagOpen(context.source, element.tag)) {
+        parseTag(context, TagType.End, parent)
+    } else {
+        emitError(context, ErrorCodes.X_MISSING_END_TAG, 0, element.loc.start)
+        if (context.source.length === 0 && element.tag.toLowerCase() === 'script') {
+            const first = children[0]
+            if (first && startsWith(first.loc.source, '<!--')) {
+                emitError(context, ErrorCodes.EOF_IN_SCRIPT_HTML_COMMENT_LIKE_TEXT)
+            }
+        }
+    }
+
+    element.loc = getSelection(context, element.loc.start)
 
     if (isPreBoundary) {
         context.inPre = false
@@ -392,7 +428,8 @@ function parseTag(
     )
 
     const start = getCursor(context)
-    // 拿到第一个标签 <style <script <template
+    // 以开始标签的话  <style <script <template <div
+    // 以结束标签的话  </style </script </template </div
     const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)!
     const tag = match[1]
     // 始终是0？在上面枚举了
@@ -485,7 +522,6 @@ function parseTag(
         }
     }
 
-
     let tagType = ElementTypes.ELEMENT
     // 当前element 不是pre
     // 重置下节点属性
@@ -518,7 +554,7 @@ function parseTag(
         loc: getSelection(context, start),
         codegenNode: undefined // to be created during transform phase
     }
-    console.log(print(currentFilename, 'parseTag()'), result)
+    console.log(print(currentFilename, 'parseTag()', `生成 ${result.tag} 标签节点`), result)
     return result
 }
 
@@ -533,7 +569,7 @@ function advanceBy(context, numberOfCharacters) {
     advancePositionWithMutation(context, source, numberOfCharacters)
     // 移除已知的部分 第一次移除 <template || <style || <script
     context.source = source.slice(numberOfCharacters)
-    console.log(print(currentFilename, 'advanceBy()', '整个解析过程中经常调用的方法，负责对模版进行截取，不断改变当前解析模版的值，直到最后模版为空，while停止'), context.source)
+    console.log(print(currentFilename, 'advanceBy()', '每次模版值在减少'), context.source)
 }
 
 // 对 \\t\\r\\n\\f 还有''删掉
@@ -1026,7 +1062,7 @@ function isComponent(
         return true
     }
 
-    // TODO 少了一段
+    // TODO 少了一段,组件的时候在回来写
 }
 
 // 注释
@@ -1187,7 +1223,6 @@ function isEnd(
     mode,
     ancestors
 ): boolean {
-    console.log(print(currentFilename, 'isEnd()'), context, mode, ancestors)
 
     // 拿到vue内容
     const s = context.source
@@ -1197,6 +1232,7 @@ function isEnd(
             if (startsWith(s, '</')) {
                 for (let i = ancestors.length - 1; i >= 0; --i) {
                     if (startsWithEndTagOpen(s, ancestors[i].tag)) {
+                        console.log(print(currentFilename, 'isEnd()',`${ ancestors[i].tag }：是否读取结束 : true`),1)
                         return true
                     }
                 }
@@ -1210,6 +1246,7 @@ function isEnd(
             const parent = last(ancestors)
             // 是否有父级 是否以结束标签开始
             if (parent && startsWithEndTagOpen(s, parent.tag)) {
+                console.log(print(currentFilename, 'isEnd()',`${ parent.tag }是否读取结束 : true`),2)
                 return true
             }
             break
@@ -1217,13 +1254,13 @@ function isEnd(
 
         case TextModes.CDATA:
             if (startsWith(s, ']]>')) {
-                console.error('TextModes.CDATA');
-                // console.log(print(currentFilename, 'isEnd()->TextModes.CDATA'), startsWith(s, ']]>'))
+                console.log(print(currentFilename, 'isEnd()',`]]> 是否读取结束 : ${!s}`),3)
                 return true
             }
             break
     }
 
+    console.log(print(currentFilename, 'isEnd()',`${s.slice(0,8)}：是否读取结束 : ${!s}`),4)
     return !s
 }
 
