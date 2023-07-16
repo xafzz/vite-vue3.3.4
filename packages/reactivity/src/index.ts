@@ -1,8 +1,17 @@
 import { print } from "@vue/shared";
 
-export { 
+export {
     ref
 } from './ref'
+
+export {
+    reactive,
+    shallowReactive,
+    readonly,
+    shallowReadonly,
+
+    isReactive,
+} from './reactive'
 
 const filename = 'reativity/index.ts'
 

@@ -6,6 +6,13 @@
 // compiler-sfc parse() end 
 
 
-// @ts-ignore
-import { value } from './reactivity.ts';
-console.log(value);
+
+import { ref, reactive,shallowReactive,readonly,shallowReadonly,isReactive } from "@vue/reactivity"
+
+let value = undefined
+
+value = shallowReactive([1])
+
+value.push(30) // = 30
+
+console.log(`结果：`,isReactive(value),value);

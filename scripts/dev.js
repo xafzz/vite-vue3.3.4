@@ -2,8 +2,11 @@ import { readdirSync, statSync } from 'fs'
 import { execa } from 'execa'
 
 // 获取打包目录
-const dirs = readdirSync('packages').filter(dir => statSync(`packages/${dir}`).isDirectory())
-
+// const dirs = readdirSync('packages').filter(dir => statSync(`packages/${dir}`).isDirectory())
+const dirs = [
+    'reactivity',
+    'shared'
+]
 // 对获取的目录进行打包
 buildAll()
 

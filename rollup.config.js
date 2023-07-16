@@ -43,7 +43,7 @@ const outputConfigs = {
 function createConfig(format, output) {
 
   output.name = packageOptions.name
-  output.sourcemap = true
+  output.sourcemap = false
 
   return {
     // 入口

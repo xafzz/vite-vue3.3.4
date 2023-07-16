@@ -1,10 +1,21 @@
-import { ref } from "@vue/reactivity"
+import { ref, reactive,shallowReactive,readonly,shallowReadonly } from "@vue/reactivity"
 
 
 let value = undefined
 
-value = ref(1)
+value = reactive({
+    a: 1,
+    b: 2,
+    c: {
+        d: 3,
+        e: {
+            f: 4
+        }
+    }
+})
 
-export { 
+value.a = 2
+
+export {
     value
 }
