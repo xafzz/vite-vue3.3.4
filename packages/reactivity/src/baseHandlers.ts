@@ -2,10 +2,10 @@ import { extend, hasChanged, hasOwn, isArray, isIntegerKey, isObject, isSymbol, 
 import { ReactiveFlags, isReadonly, isShallow, reactive, reactiveMap, readonly, readonlyMap, shallowReactiveMap, shallowReadonlyMap, toRaw } from "./reactive"
 import { ITERATE_KEY, pauseTracking, resetTracking, track, trigger } from "./effect"
 import { TrackOpTypes, TriggerOpTypes } from "./operations"
-import { isRef } from "./ref"
+import { isRef } from "./ref" 
 
 const filename = 'reativity/baseHandlers.ts'
-
+ 
 
 const isNonTrackableKeys = /*#__PURE__*/ makeMap(`__proto__,__v_isRef,__isVue`)
 
@@ -138,10 +138,10 @@ function createGetter(
         // 不是只读 才会收集依赖
         // 只读数据无法进行修改 收集依赖也是没用的
         if (!isReadonly) {
-            console.log(32123, target, TrackOpTypes.GET, key)
-            // track(target, TrackOpTypes.GET, key)
+            track(target, TrackOpTypes.GET, key)
         }
 
+        // 浅的只对第一层代理
         if (shallow) {
             return res
         }
@@ -197,9 +197,10 @@ function createSetter(shallow = false) {
         }
 
         // key 不是 target 本身
+        // 判断是新增 还是 修改
         const hadKey = isArray(target) && isIntegerKey(key)
-            ? Number(key) < target.length
-            : hasOwn(target, key)
+            ? Number(key) < target.length //key 小于目标对象的长度  修改
+            : hasOwn(target, key)  // 新增
 
         const result = Reflect.set(target, key, value, receiver)
 
@@ -254,7 +255,7 @@ export const shallowReactiveHandlers =  /*#__PURE__*/ extend(
 export const readonlyHandlers = {
     get: readonlyGet,
     set(target, key) {
-        if (__DEV__) {
+        if (__DEV__) { 
             console.warn(
                 `Set operation on key "${String(key)}" failed: target is readonly.`,
                 target

@@ -13,6 +13,8 @@ export {
     isReactive,
 } from './reactive'
 
+export { effect } from './effect'
+
 const filename = 'reativity/index.ts'
 
 console.log(print(filename, 'start'));

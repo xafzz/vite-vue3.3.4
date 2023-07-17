@@ -231,11 +231,13 @@ watcher.on('ready', () => {
 watcher.on('change', (path) => {
     console.log('change->', path)
     
-    ioSocket.emit('pageChange', {
-        path: path,
-        server: true,
-        client: false
-    })
+    if (path.indexOf('dist') > -1 ) {
+        ioSocket.emit('pageChange', {
+            path: path,
+            server: true,
+            client: false
+        })
+    }
 }).on('add', (path) => {
     //添加的时候
     // console.log('add->',path)

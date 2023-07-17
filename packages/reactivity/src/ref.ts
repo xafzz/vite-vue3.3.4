@@ -24,7 +24,7 @@ export function triggerRefValue(ref, newVal) {
 
 export function isRef(r) {
     const result = !!(r && r.__v_isRef === true)
-    console.log(print(filename, 'isRef', '通过__v_isRef'), result);
+    // console.log(print(filename, 'isRef', '通过__v_isRef'), result);
     return result
 }
 
@@ -32,17 +32,6 @@ export function ref(value?: unknown) {
     console.log(print(filename, 'ref'), value);
 
     return createRef(value, false)
-}
-
-function createRef(rawValue: unknown, shallow: boolean) {
-    if (isRef(rawValue)) {
-        console.log(print(filename, 'createRef'), rawValue);
-        return rawValue
-    }
-
-    const result = new RefImpl(rawValue, shallow)
-    console.log(print(filename, 'createRef', 'new RefImpl()'), result);
-    return result
 }
 
 // 
@@ -87,4 +76,15 @@ class RefImpl {
             triggerRefValue(this,newVal)
         }
     }
+}
+
+function createRef(rawValue: unknown, shallow: boolean) {
+    if (isRef(rawValue)) {
+        console.log(print(filename, 'createRef'), rawValue);
+        return rawValue
+    }
+
+    const result = new RefImpl(rawValue, shallow)
+    console.log(print(filename, 'createRef', 'new RefImpl()'), result);
+    return result
 }

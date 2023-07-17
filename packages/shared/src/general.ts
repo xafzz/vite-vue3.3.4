@@ -2,13 +2,17 @@
 // 合并对象
 export const extend = Object.assign
 
+export const isArray = Array.isArray
 // object
 export const isObject = (val: unknown): val is Record<any, any> => val !== null && typeof val === 'object'
 
 export const isString = (val: unknown): val is string => typeof val === 'string'
 export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
 
+export const isMap = (val: unknown): val is Map<any, any> =>
+  toTypeString(val) === '[object Map]'
 
+  // 数组的索引是不是一个整数
 export const isIntegerKey = (key: unknown) =>
   isString(key) &&
   key !== 'NaN' &&
@@ -21,7 +25,6 @@ export const hasChanged = (value, oldValue) => !Object.is(value,oldValue)
 // 始终是false
 export const NO = () => false
 
-export const isArray = Array.isArray
 
 
 const cacheStringFunction =(fn) => {
@@ -49,7 +52,7 @@ export const toRawType = (value: unknown): string => {
   return toTypeString(value).slice(8, -1)
 }
 
-
+// 判断对象中是否有这个属性
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export const  hasOwn = (
   val: object,

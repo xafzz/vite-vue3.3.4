@@ -43,18 +43,21 @@ const outputConfigs = {
 function createConfig(format, output) {
 
   output.name = packageOptions.name
-  output.sourcemap = false
+  output.sourcemap = true
 
   return {
     // 入口
     input: resolve(packageDir, `src/index.ts`),
-    output,
     external: [
       'lru-cache'
     ],
     plugins: [
-      pluginCommonJs(),
       json(),
+      pluginCommonJs({
+        transformMixedEsModules: true,
+        sourceMap: false,
+      }),
+      nodeResolve(),
       ts({
         tsconfig: resolve(__dirname, 'tsconfig.json'),
       }),
@@ -62,6 +65,7 @@ function createConfig(format, output) {
         tsconfig: resolve(__dirname, 'tsconfig.json'),
         sourceMap: output.sourcemap,
         minify: false,
+        target:'es2015',
         define: {
           __DEV__: 'true',
           __BROWSER__: 'true',
@@ -70,8 +74,16 @@ function createConfig(format, output) {
           __COMPAT__: 'true'
         }
       }),
-      nodeResolve()
-    ]
+    ],
+    output,
+    onwarn: (msg, warn) => {
+      if (!/Circular/.test(msg)) {
+        warn(msg)
+      }
+    },
+    treeshake: {
+      moduleSideEffects: false
+    }
   }
 }
 
