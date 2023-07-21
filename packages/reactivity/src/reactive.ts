@@ -109,7 +109,7 @@ function createReactiveObject(
     collectionHandlers, // 针对集合的proxy捕获器
     proxyMap    // 一个用于缓存的proxy的weekMap对象
 ) {
-
+    
     // 不是 object 直接返回 target
     if (!isObject(target)) {
         if (__DEV__) {
@@ -159,7 +159,7 @@ function createReactiveObject(
         targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers
     )
     proxyMap.set(target,proxy)
-    console.log(print(filename, 'createReactiveObject',), proxy);
+    console.log(print(filename, 'createReactiveObject','reactive核心函数'), proxy);
     return proxy
 }
 
@@ -173,7 +173,7 @@ export function toRaw<T>(observed: T): T {
 
 export const toReactive = value => {
     const isObj = isObject(value)
-    console.log(print(filename, 'toReactive', `${isObj ? '是Object->reactive()' : '不是Object,返回:' + value}`), value);
+    // console.log(print(filename, 'toReactive', `${isObj ? '是Object->reactive()' : '不是Object,返回:' + value}`), value);
     return isObj ? reactive(value) : value
 }
 
@@ -209,12 +209,16 @@ export function isReactive(value: unknown): boolean {
 
 export function isReadonly(value: unknown): boolean {
     const result = !!(value && value[ReactiveFlags.IS_READONLY])
-    // console.log(print(filename, 'isReadonly', `isReadonly: ${result}`), value);
+    console.log(print(filename, 'isReadonly', `isReadonly: ${result}`), value);
     return result
 }
 
 export function isShallow(value: unknown): boolean {
     const result = !!(value && value[ReactiveFlags.IS_SHALLOW])
-    // console.log(print(filename, 'isShallow', `'${value}' isShallow: ${result}`), value);
+    console.log(print(filename, 'isShallow', `'${value}' isShallow: ${result}`), value);
     return result
+}
+
+export function isProxy(object) { 
+    return isReactive(object) || isReadonly(object)
 }

@@ -241,7 +241,7 @@ export function track(target, type, key) {
             ? { effect: activeEffect, target, type, key }
             : undefined
 
-        console.log(print(filename, 'track收集依赖', `通过${type}获取的key：'${key}'`), target, dep, eventInfo);
+        console.log(print(filename, 'track', `创建dep`), dep);
         trackEffects(dep, eventInfo)
     }
 }
@@ -265,6 +265,7 @@ export function trackEffects(
         // 后续computed 还要用到
         // 收集依赖
         dep.add(activeEffect!)
+        console.log(print(filename, 'trackEffects',`activeEffect添加到dep中，完成收集依赖`),dep,activeEffect);
         activeEffect!.deps.push(dep)
         if (__DEV__ && activeEffect!.onTrack) {
             activeEffect!.onTrack(
@@ -323,6 +324,8 @@ export function trigger(
         if (key !== void 0) {
             deps.push(depsMap.get(key))
         }
+
+        // 增 删 改
         switch (type) {
             case TriggerOpTypes.ADD:
                 if (!isArray(target)) {
@@ -414,4 +417,9 @@ function triggerEffect(
             effect.run()
         }
     }
+}
+
+// toRef get dep
+export function getDepFromReactive(object,key) { 
+    return targetMap.get(object)?.get(key)
 }

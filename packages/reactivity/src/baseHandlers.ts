@@ -231,8 +231,12 @@ function has(target, key) {
     console.error('has()');
 }
 
+// 返回一个由目标对象自身的属性键组成的数组
 function ownKeys(target) {
-    console.error('ownKeys()');
+    // iterate
+    track(target,TrackOpTypes.ITERATE,isArray(target) ? 'loength' : ITERATE_KEY)
+    // 
+    return Reflect.ownKeys(target)
 }
 
 export const mutableHandlers = {

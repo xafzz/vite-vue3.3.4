@@ -1,7 +1,12 @@
 import { print } from "@vue/shared";
 
 export {
-    ref
+    ref,
+    shallowRef,
+    isRef,
+    unref,
+    toRef,
+    toRefs
 } from './ref'
 
 export {
