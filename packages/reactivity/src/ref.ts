@@ -41,7 +41,7 @@ export function trackRefValue(ref) {
 }
 
 // 触发ref的响应式更新
-export function triggerRefValue(ref, newVal) {
+export function triggerRefValue(ref, newVal?:any) {
     ref = toRaw(ref)
     const dep = ref.dep
     if (dep) {

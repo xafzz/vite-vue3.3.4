@@ -20,6 +20,8 @@ export {
 
 export { effect } from './effect'
 
+export { computed } from './computed'
+
 const filename = 'reativity/index.ts'
 
 console.log(print(filename, 'start'));

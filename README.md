@@ -1,95 +1,91 @@
-
-## watch 观察选项配置
-
-使用`chokidar` 代替 node 内置的文件监听 fs.watch 
-
-
-## Ref
-
-### ref()
+# Computed
 
 ```js
-effect(() => { 
-     console.log(`结果：${count.value}`);
-})
-count.value ++
+const val = computed(xx)
+
+// const CRef = new ComputedRefImpl(getter, setter, onltGetter || !setter, isSSR)
 ```
 
-### shallowRef()
-
-```
-const state = shallowRef({ count: 1 })
-
-// 不会触发更改
-// 只对 .value 是响应式 深层没有递归转为响应式
-state.value.count = 2
-
-// 会触发更改
-state.value = { count: 2 }
-```
-
-### isRef()
+### isFunction(xx) = true
 
 ```js
-const count = ref(1)
+     const count = ref(1)
+     const changeCount = computed(() =>  count.value ++ )
 
-console.log(isRef(count));  // true
+     // readonly 不能设置
+     // changeCount.value = 2222
+
+     getter = getterOrOptions // () =>  count.value ++
+     setter = __DEV__
+          ? () => {
+               console.warn('computed的值是只读的');
+          }
+          : NOOP
 ```
 
-### unref()
+### isFunction(xx) = false
 
 ```js
-const count = ref(1)
+     const count = ref(1)
+     const plusOne = computed({
+     get: () => count.value + 2,
+     set: val => {
+          count.value = val - 1
+          }
+     })
 
-console.log(isRef(count)); // 1
+     getter = getterOrOptions.get
+     setter = getterOrOptions.set
 ```
 
-### toRef()
-
-- isRef(source)
-
-  return source
-
-- isFunction(source)
-  
-  return source()
-   
-- isObject(sourve)
-  
-  return isRef(source) ? source : new ObjectRefImpl{
-     public readonly __v_isRef = true
-
-     constructior(
-          object,key,defaultValue
-     ){}
-
-     get value(){
-          const val = this.object[this.key]
-          return val === undefined ? this.defaultValue : val
-     }
-     set value(newVal){
-          this.object[this.key] = newVal
-     }
-  }
-  
-- default
-
-  return ref(souce)
-
-
-### toRefs()
+## ComputedRefImpl
 
 ```js
-const state = reactive({
-     a:1,
-     b:2,
-     c:3
-})
-// ret 相当于下面的 res
-const ret = toRefs(state)
-// 相当于
-const res = {}
-for(const key in state){
-     res[key] = ref(state,key)
+class ComputedRefImpl<T> {
+
+    public dep?: Dep = undefined
+
+    private _value!: T
+    public readonly effect: ReactiveEffect<T>
+
+    public readonly __v_isRef = true // 返回是一个ref
+    public readonly [ReactiveFlags.IS_READONLY]: boolean = false
+
+    public _dirty = true
+    public _cacheable: boolean
+
+    constructor(
+        getter: ComputedGetter<T>,
+        private readonly _setter: ComputedSetter<T>,
+        isReadonly: boolean,
+        isSSR: boolean
+    ) {
+
+        this.effect = new ReactiveEffect(getter, () => {
+            if (!this._dirty) {
+                this._dirty = true
+                triggerRefValue(this)
+            }
+        })
+        this.effect.computed = this
+        // 默认 isSSR false，激活 收集依赖
+        this.effect.active = this._cacheable = !isSSR
+        this[ReactiveFlags.IS_READONLY] = isReadonly
+    }
+
+    get value() {
+        // 计算的ref可能被其他代理封装，例如readonly（）#3376
+        const self = toRaw(this)
+        trackRefValue(self)
+        if (self._dirty || !self._cacheable) {
+            self._dirty = false
+            // 执行 传进来的 fn
+            self._value = self.effect.run()!
+        }
+        return self._value
+    }
+    set value(newValue: T) {
+        this._setter(newValue)
+    }
 }
 ```

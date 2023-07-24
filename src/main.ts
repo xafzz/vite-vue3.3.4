@@ -1,23 +1,20 @@
-
-// compiler-sfc parse() start 
-// import { parse } from '@vue/compiler-sfc'
-// import CompilerSFC from './compiler-sfc.vue'
-// parse(CompilerSFC.template)
-// compiler-sfc parse() end 
+import { computed, ref } from "@vue/reactivity";
 
 
+const count = ref(1)
 
-import { effect, isRef, reactive, ref, shallowRef, toRef, toRefs, unref } from "@vue/reactivity"
+// const changeCount = computed(() =>  count.value ++ )
 
-const state = reactive({
-    a:1,
-    b:2,
-    c:3
+// readonly 不能设置
+// changeCount.value = 2222
+// console.log(222,changeCount.value);
+
+const plusOne = computed({
+    get: () => count.value + 2,
+    set: val => {
+        count.value = val - 1
+      }
 })
-
-const res = {}
-for(const key in state){
-     res[key] = toRef(state,key)
-}
-
-console.log(res);
+plusOne.value = 10
+console.log(count.value,count);
+console.log(plusOne.value,plusOne);

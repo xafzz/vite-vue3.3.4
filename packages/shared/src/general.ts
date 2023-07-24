@@ -19,6 +19,7 @@ export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
 // object
 export const isObject = (val: unknown): val is Record<any, any> => val !== null && typeof val === 'object'
 
+export const NOOP = () => {}
 
   // 数组的索引是不是一个整数
 export const isIntegerKey = (key: unknown) =>

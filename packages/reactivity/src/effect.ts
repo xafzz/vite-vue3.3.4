@@ -2,6 +2,7 @@ import { extend, isArray, isIntegerKey, isMap, print } from "@vue/shared";
 import { Dep, createDep, finalizeDepMarkers, initDepMakers, newTracked, wasTracked } from "./dep";
 import { EffectScope, recordEffectScope } from "./effectScope";
 import { TrackOpTypes, TriggerOpTypes } from "./operations";
+import { ComputedRefImpl } from "./computed";
 
 const filename = 'reativity/effect.ts'
 
@@ -53,7 +54,7 @@ export class ReactiveEffect<T = any>{
     // 记录嵌套的effect中的上一级
     parent: ReactiveEffect | undefined = undefined
 
-    computed?: any // ComputedRefImpl<T>
+    computed?: ComputedRefImpl<T> // ComputedRefImpl<T>
 
     allowRecurse?: boolean
 
@@ -389,16 +390,19 @@ export function triggerEffects(
     debuggerEventExtraInfo?: DebuggerEventExtraInfo
 ) {
     const effects = isArray(dep) ? dep : [...dep]
+    // for (const effect of effects) {
+    //     if (effect.computed) {
+    //         console.error(`effect.computed 存在了`);
+    //         triggerEffect(effect, debuggerEventExtraInfo)
+    //     }
+    // }
+    // for (const effect of effects) {
+    //     if (!effect.computed) {
+    //         triggerEffect(effect, debuggerEventExtraInfo)
+    //     }
+    // }
     for (const effect of effects) {
-        if (effect.computed) {
-            console.error(`effect.computed 存在了`);
-            triggerEffect(effect, debuggerEventExtraInfo)
-        }
-    }
-    for (const effect of effects) {
-        if (!effect.computed) {
-            triggerEffect(effect, debuggerEventExtraInfo)
-        }
+        triggerEffect(effect,debuggerEventExtraInfo)
     }
 }
 
