@@ -17,7 +17,7 @@ const state = reactive({
 
 const res = {}
 for(const key in state){
-     res[key] = ref(state,key)
+     res[key] = toRef(state,key)
 }
 
 console.log(res);
