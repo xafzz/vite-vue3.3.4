@@ -3,10 +3,11 @@ import { execa } from 'execa'
 import chokidar from 'chokidar'
 
 // 获取打包目录
-const buildDirs = ['compiler-core','compiler-dom','compiler-sfc','reactivity','shared']
+const buildDirs = ['runtime-dom','runtime-core','compiler-core','compiler-dom','compiler-sfc','reactivity','shared']
 // const dirs = readdirSync('packages').filter(dir => statSync(`packages/${dir}`).isDirectory())
 const dirs = [
-    'reactivity',
+    'runtime-dom',
+    'runtime-core',
     'shared'
 ]
 // 对获取的目录进行打包

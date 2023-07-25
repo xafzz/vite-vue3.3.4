@@ -11,6 +11,8 @@ importers:
       '@vue/compiler-dom': workspace:*
       '@vue/compiler-sfc': workspace:*
       '@vue/reactivity': workspace:*
+      '@vue/runtime-core': workspace:*
+      '@vue/runtime-dom': workspace:*
       '@vue/shared': workspace:*
       chokidar: ^3.5.3
       esbuild: ^0.18.11
@@ -28,6 +30,8 @@ importers:
       '@vue/compiler-dom': link:packages/compiler-dom
       '@vue/compiler-sfc': link:packages/compiler-sfc
       '@vue/reactivity': link:packages/reactivity
+      '@vue/runtime-core': link:packages/runtime-core
+      '@vue/runtime-dom': link:packages/runtime-dom
       '@vue/shared': link:packages/shared
     devDependencies:
       '@rollup/plugin-commonjs': registry.npmmirror.com/@rollup/plugin-commonjs/25.0.2_rollup@3.26.1
@@ -65,6 +69,12 @@ importers:
       lru-cache: registry.npmmirror.com/lru-cache/10.0.0
 
   packages/reactivity:
+    specifiers: {}
+
+  packages/runtime-core:
+    specifiers: {}
+
+  packages/runtime-dom:
     specifiers: {}
 
   packages/shared:
