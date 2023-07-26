@@ -7,6 +7,8 @@ import fs, { readFileSync, statSync } from 'fs'
 import { resolve } from 'path';
 import { createRequire } from 'module';
 
+import { parse } from '@vue/compiler-sfc';
+
 //端口号
 const port = 8888
 const app = new koa()
@@ -159,15 +161,12 @@ app.use(async (ctx, next) => {
         // 文件内容
         let content = readFileSync(resolve(__dirname, p.slice(1)), "utf-8")
 
+        const templateAst = parse(content)
         //写入文件
         // 将原文件处理成字符串
         ctx.type = 'application/javascript'
         ctx.body = `
-const template =
-\`${content}\`
-export default{
-    template
-}
+export default ${JSON.stringify(templateAst)}
         `
     } else if (url.indexOf('@module/') > -1) { //最后处理例： from 'lru-cache'
         

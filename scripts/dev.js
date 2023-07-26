@@ -62,10 +62,10 @@ const watcher = chokidar.watch('.', {
 watcher.on('change', path => { 
     console.log(`changed-> ${path}`)
     if (path.indexOf('dist') === -1 && path.indexOf('packages') > -1) { 
-        const changeDir = path.split('/')
-        const dir = buildDirs.indexOf(changeDir[1]) > -1 ? changeDir[1] : buildDirs
-        console.log(changeDir,dir)
-        buildAll(dir)
+        // const changeDir = path.split('/')
+        // const dir = buildDirs.indexOf(changeDir[1]) > -1 ? changeDir[1] : buildDirs
+        // console.log(changeDir,dir,[dir,...dirs])
+        buildAll(dirs)
     }
     // src/main.ts src/xx.ts
     if (path.indexOf('dist') === -1 && path.indexOf('packages') === -1 && path.indexOf('src') > -1) { 

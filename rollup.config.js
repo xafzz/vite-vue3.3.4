@@ -20,6 +20,8 @@ const pkg = require(resolve(packageDir, `package.json`))
 const packageOptions = pkg.buildOptions || {}
 const name = basename(process.env.TARGET)
 
+const version = pkg.version
+
 const outputConfigs = {
   'esm-bundler': {
     file: resolve(packageDir, `dist/${name}.esm-bundler.js`),
@@ -67,11 +69,14 @@ function createConfig(format, output) {
         minify: false,
         target:'es2015',
         define: {
-          __DEV__: 'true',
+          __DEV__: 'false',
           __BROWSER__: 'true',
           __NUMBER__: '1',
-          __TEST__: 'true',
-          __COMPAT__: 'true'
+          __VERSION__: `'${version}'`,
+          __TEST__: 'false',
+          __COMPAT__: 'false',
+          __ESM_BUNDLER__: 'false',
+          __FEATURE_PROD_DEVTOOLS__: 'false'
         }
       }),
     ],
