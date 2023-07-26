@@ -1,11 +1,14 @@
 import { extend, isFunction, isString, print } from "@vue/shared";
 import { createRenderer } from "@vue/runtime-core";
+import { nodeOps } from "./nodeOps";
+import { patchProp } from "./patchProp";
 
 const filename = 'runtime-dom/index.ts'
 
 // nodeOps 集合了原生dom方法，处理dom
 // patchProp  处理元素属性方法等
-const rendererOptions = /*#__PURE__*/ extend({}, {})
+const rendererOptions = /*#__PURE__*/ extend({ patchProp }, nodeOps)
+
 //惰性地创建渲染器-这使得核心渲染器逻辑树不稳定
 //以防用户仅从Vue导入反应性实用程序。
 let renderer
