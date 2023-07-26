@@ -30,40 +30,43 @@ export const createApp = (...args) => {
     }
 
     // 从创建的app对象中解构获取mount，改写mount方法后 返回app实例
-    // const { mount } = app
-    // app.mount = (containerOrSelector: Element | ShadowRoot | String): any => {
-    //     // document.querySelector 过程
-    //     const container = normalizeContainer(containerOrSelector)
-    //     if (!container) return
+    const { mount } = app
+    app.mount = (containerOrSelector: Element | ShadowRoot | String): any => {
+        // document.querySelector 过程
+        const container = normalizeContainer(containerOrSelector)
+        if (!container) return
 
-    //     // 这里的app._component 其实就是全局API的createApp的第一个参数
-    //     const component = app._component
-    //     if (!isFunction(component) && !component.render && !component.template) {
-    //         // 可能在dom模板中执行JS表达式。
-    //         // 如果是模版,用户必须确保内dom模板是可信的。
-    //         // 如果是服务器渲染,该模板不应该包含任何用户数据。
+        // 这里的app._component 其实就是全局API的createApp的第一个参数
+        const component = app._component
+        // 不是函数 不存在 render 和 template
+        if (!isFunction(component) && !component.render && !component.template) {
+            // 可能在dom模板中执行JS表达式。
+            // 如果是模版,用户必须确保内dom模板是可信的。
+            // 如果是服务器渲染,该模板不应该包含任何用户数据。
+            
+            //  使用 DOM的innerHTML作为component.template 内容
+            component.template = container.innerHTML
 
-    //         //  使用 DOM的innerHTML作为component.template 内容
-    //         component.template = container.innerHTML
+            // 兼容2.x
+            if (__COMPAT__ && __DEV__) { 
+                console.error(`兼容2.x`);
+            }
+        }
 
-    //         // 兼容2.x
-    //         if (__COMPAT__ && __DEV__) { 
-    //             console.error(`兼容2.x`);
-    //         }
-    //     }
-
-    //     // 挂载之前清空下
-    //     container.innerHTML = ''
-    //     // 真正的挂载  是否为svg
-    //     const proxy = mount(container, false, container instanceof SVGAElement)
-    //     if (container instanceof Element) {
-    //         // 防止闪烁变量名
-    //         // 先隐藏文件挂载的位置 处理好渲染后显示最终的结果 需要跟 css 一起使用
-    //         container.removeAttribute('v-cloak')
-    //         container.setAttribute('data-v-app', '')
-    //     }
-    //     return proxy
-    // }
+        // 挂载之前清空下
+        container.innerHTML = ''
+        // 真正的挂载  是否为svg
+        const proxy = mount(container, false, container instanceof SVGAElement)
+        console.warn(``,proxy);
+        
+        if (container instanceof Element) {
+            // 防止闪烁变量名
+            // 先隐藏文件挂载的位置 处理好渲染后显示最终的结果 需要跟 css 一起使用
+            container.removeAttribute('v-cloak')
+            container.setAttribute('data-v-app', '')
+        }
+        return proxy
+    }
 
     console.log(print(filename, 'createApp'), app);
 

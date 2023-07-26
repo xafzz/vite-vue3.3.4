@@ -1,5 +1,6 @@
 import { NO, extend, isFunction, isObject, print } from "@vue/shared";
 import { version } from ".";
+import { createVNode } from "./vnode";
 
 
 const filename = 'runtime-core/apiCreateApp.ts'
@@ -31,7 +32,7 @@ export function createAppAPI(
 
         const isMounted = false
 
-        const app = (context.app =  {
+        const app = (context.app = {
             _uid: uid++, //标识组件的唯一id
             _component: rootComponent,  //存放当前组件通过编译后的数据
             _props: rootProps, //组件参数
@@ -70,19 +71,30 @@ export function createAppAPI(
             },
             // 最重要的api
             /**
+             * createVNode将我们的根组件App转换成VNode，然后执行render将虚拟dom渲染为真实dom。
              * 
              * @param rootContainer 真实的dom元素,但是在使用时只传入一个id(app.mount('#app')),而获取dom的过程则是在编译器compiler中完成
              * @param isHydrate 
              * @param isSVG 
              * @returns 
              */
-            mount(rootContainer, isHydrate?: boolean,isSVG?:boolean) {
-                console.error(`mount`);
-                // createVNode将我们的根组件App转换成VNode，
-                // 然后执行render将虚拟dom渲染为真实dom。
+            mount(rootContainer, isHydrate?: boolean, isSVG?: boolean) {
+                // 根据闭包的变量isMounted来判断app是否已经挂载
+                if (!isMounted) {
+                    // 相同的组件放入相同的容器中
+                    if (__DEV__ && (rootContainer as any).__vue_app__) {
+                        console.warn(`主机容器上已经安装了一个应用程序实例.\n
+                        如果要在同一主机容器上装载另一个应用程序，\n
+                       您需要先调用'app.unmount'来卸载上一个应用程序`)
+                    }
+                    
+                    const vnode = createVNode(rootComponent,rootProps)
+                    console.log(print(filename, `mount`), vnode);
+
+                }
             },
             // 卸载组件
-            unmount() { 
+            unmount() {
                 // 通过isMounted来过滤
                 console.error(`unmount`);
             },
@@ -94,10 +106,10 @@ export function createAppAPI(
             runWithContext(fn) {
 
                 console.error(`runWithContext`);
-             }
+            }
         })
 
-        if (__COMPAT__) { 
+        if (__COMPAT__) {
             console.error(`兼容vue2`);
         }
 
