@@ -69,7 +69,7 @@ function createConfig(format, output) {
         minify: false,
         target:'es2015',
         define: {
-          __DEV__: 'false',
+          __DEV__: 'true',
           __BROWSER__: 'true',
           __NUMBER__: '1',
           __VERSION__: `'${version}'`,

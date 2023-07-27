@@ -1,6 +1,7 @@
 import { NOOP, getGlobalThis, print } from "@vue/shared";
 import { createAppAPI } from "./apiCreateApp";
 import { isHmrUpdating } from "./hmr";
+import { setDevtoolsHook } from "./devtools";
 
 
 
@@ -39,7 +40,7 @@ function baseCreateRenderer(
 
     target.__VUE__ = true
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
-        console.error('vue-tools');
+        setDevtoolsHook(target.__VUE_DEVTOOLS_GLOBAL_HOOK__,target)
     }
 
     const {
