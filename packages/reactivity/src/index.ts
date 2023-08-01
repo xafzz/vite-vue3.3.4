@@ -16,6 +16,10 @@ export {
     shallowReadonly,
 
     isReactive,
+    isProxy,
+
+    toRaw,
+    ReactiveFlags
 } from './reactive'
 
 export { effect } from './effect'
