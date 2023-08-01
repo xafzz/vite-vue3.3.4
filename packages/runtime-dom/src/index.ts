@@ -1,9 +1,7 @@
-import { extend, isFunction, isString, print } from "@vue/shared";
-import { createRenderer } from "@vue/runtime-core";
+import { extend, isFunction, isString, print,isHTMLTag, isSVGTag } from "@vue/shared";
+import { createRenderer,isRuntimeOnly } from "@vue/runtime-core";
 import { nodeOps } from "./nodeOps";
 import { patchProp } from "./patchProp";
-import { isHTMLTag, isSVGTag } from "packages/shared/src/domTagConfig";
-import { isRuntimeOnly } from "packages/runtime-core/src/components";
 
 const filename = 'runtime-dom/index.ts'
 
