@@ -10,10 +10,78 @@
 </head>
 <body>
     <div id="app">这是#app内容</div>
+
+    <div id="app-loading" class="loading">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+     
+    <style type="text/css">
+        body{
+            margin: 0;
+        }
+        .loading{
+            background-color: gray;
+
+            width: 50px;
+            height: 50px;
+            padding: calc( (100vh - 50px) / 2) calc( (100% - 50px) / 2);
+            justify-content: center;
+            align-items: center;
+            flex-direction: row;
+
+            display:none;
+        }
+        .loading span{
+            display: flex;
+            width: 8px;
+            height: 100%;
+            border-radius: 4px;
+            background-color: lightgreen;
+            animation: load 1s ease infinite;
+            margin: 0 2px;
+        }
+        @keyframes load{
+            0%,
+            100% {
+                transform: scaleY(1.5);
+                background-color: lightgreen;
+            }
+            50% {
+                transform: scaleY(1);
+                background-color: lightblue;
+            }
+        }
+        
+        .loading span:nth-child(2){
+            animation-delay: 0.2s;
+        }
+        .loading span:nth-child(3){
+            animation-delay: 0.4s;
+        }
+        .loading span:nth-child(4){
+            animation-delay: 0.6s;
+        }
+        .loading span:nth-child(5){
+            animation-delay: 0.8s;
+        }
+     
+    </style>
+
+
     <script type="module" src="./src/main.ts"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        var socket = io('ws://localhost:8888');
+        var socket = io('ws://localhost:8888') || io('ws://127.0.0.1:8888');
+        socket.on('first', function (data) {
+            if(data && data.server){
+                document.querySelector("#app").setAttribute('style','display:none')
+                document.querySelector("#app-loading").setAttribute('style','display:flex')
+            }
+        });
         socket.on('pageChange', function (data) {
             if(data && data.server){
                 window.location.reload()

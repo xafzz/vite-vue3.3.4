@@ -7,8 +7,6 @@ import fs, { readFileSync, statSync } from 'fs'
 import { resolve } from 'path';
 import { createRequire } from 'module';
 
-import { parse } from '@vue/compiler-sfc';
-
 //端口号
 const port = 8888
 const app = new koa()
@@ -86,14 +84,14 @@ function writeImport(content, initUrl) {
                         // returnImport = ` from '/@module/${s1}'`
                         returnImport = `/@module/${s1}`
                     } else {
-                        // 什么都没有的时候
+                        // 什么都没有的时候 import { LRUCache } from 'lru-cache'
                         returnImport = `/@module/${s1}`
                         //其他点情况 都报错
-                        console.warn('\x1b[41;30m 2 Waring \x1b[40;33m ' + s0 + ' \x1b[0m')
+                        // console.warn('\x1b[41;30m 2 Waring \x1b[40;33m ' + s0 + ' \x1b[0m')
                     }
                 }
             }
-            
+
             return ` from '${returnImport}'`
         } catch (e) {
             //不要打印错误
@@ -112,7 +110,6 @@ app.use(async (ctx, next) => {
         ctx.type = 'text/html'
         ctx.body = content
     } else if (url.endsWith('.ts') || url.endsWith('.js')) {
-        console.log(654656,url)
         // 路径
         const paths = resolve(__dirname, url.slice(1))
         // 获取ts内容
@@ -139,7 +136,7 @@ app.use(async (ctx, next) => {
             urlArray.splice(-1, 0, `${dir[0]}/dist`)
 
             let paths = resolve(__dirname, urlArray.join('/').replace('@module', 'node_modules').slice(1))
-            
+
             let content = readFileSync(paths, 'utf-8')
             ctx.type = 'application/javascript'
             ctx.body = writeImport(content)
@@ -161,38 +158,41 @@ app.use(async (ctx, next) => {
         // 文件内容
         let content = readFileSync(resolve(__dirname, p.slice(1)), "utf-8")
 
-        const templateAst = parse(content)
         //写入文件
         // 将原文件处理成字符串
         ctx.type = 'application/javascript'
         ctx.body = `
-export default ${JSON.stringify(templateAst)}
+export default ${JSON.stringify(content)}
         `
     } else if (url.indexOf('@module/') > -1) { //最后处理例： from 'lru-cache'
-        
+
         if (url.endsWith('.map')) {
-            
-            let content = readFileSync(__dirname+resolve(__dirname, url.replace('@module', '')), 'utf-8')
-            
+
+            let content = readFileSync(__dirname + resolve(__dirname, url.replace('@module', '')), 'utf-8')
+
             ctx.type = 'application/javascript'
             ctx.body = writeImport(content)
-        } else { 
-            let paths = resolve(__dirname, url.replace('@module', 'node_modules'))
+        } else {
+            let paths = resolve(__dirname, url.replace('@module', 'node_modules')).slice(1)
             //找到node_modules 里面的 package.json
             // 这个可以再改成其他的
-            let packAge = require(__dirname + paths.slice(1) + '/package.json').module //.main
+            let packAge = require(__dirname + paths + '/package.json').module //.main
+            // ./dist dist
+            if (packAge.indexOf('./dist') > -1) {
+                packAge = packAge.replace('./dist', 'dist')
+            }
             //拿到里面的内容
-            let content = readFileSync(__dirname + paths.slice(1) + packAge.slice(1), 'utf-8')
+            let content = readFileSync(__dirname + paths + '/' + packAge, 'utf-8')
             // 如果开启了sourceMap 会在最下面加上地址
 
-            if (/\/\/\# sourceMappingURL=/.test(content)) { 
-                const urlages = packAge.slice(1).split('\/')
+            if (/\/\/\# sourceMappingURL=/.test(content)) {
+                const urlages = packAge.split('\/')
                 urlages.pop()
-                const p = paths.slice(1) + urlages.join('\/')
-                
-                content = content.replace('# sourceMappingURL=',`# sourceMappingURL=${p}/`)
+                const p = paths + '/' + urlages.join('\/')
+
+                content = content.replace('# sourceMappingURL=', `# sourceMappingURL=${p}/`)
             }
-            
+
             ctx.type = 'application/javascript'
             ctx.body = content
         }
@@ -227,18 +227,34 @@ watcher.on('ready', () => {
         return socket
     });
 })
-watcher.on('change', (path) => {
-    console.log('change->', path)
-    
-    if (path.indexOf('dist') > -1 ) {
-        ioSocket.emit('pageChange', {
-            path: path,
-            server: true,
-            client: false
-        })
+
+// 防抖 timer
+let timer = false
+let time = true
+watcher.on('change', async path => {
+    // 接收到第一次 通知页面loading住
+    if (path.indexOf('dist') > -1) {
+
+        console.log('change->', path)
+        // 第一次有变化 通知页面loading
+        if ( time ) { 
+            ioSocket.emit('first', {
+                path: path,
+                server: true,
+                client: false
+            })
+        }
+        time = false
+
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+            // 重置回去
+            time = true
+            ioSocket.emit('pageChange', {
+                path: path,
+                server: true,
+                client: false
+            })
+        },500);
     }
-}).on('add', (path) => {
-    //添加的时候
-    // console.log('add->',path)
-    //
 })

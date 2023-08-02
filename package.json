@@ -17,13 +17,7 @@
   "author": "xafzz",
   "license": "ISC",
   "dependencies": {
-    "@vue/compiler-core": "workspace:*",
-    "@vue/compiler-dom": "workspace:*",
-    "@vue/compiler-sfc": "workspace:*",
-    "@vue/reactivity": "workspace:*",
-    "@vue/runtime-core": "workspace:*",
-    "@vue/runtime-dom": "workspace:*",
-    "@vue/shared": "workspace:*"
+    "vue": "workspace:*"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.2",

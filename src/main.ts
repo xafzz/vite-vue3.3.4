@@ -1,8 +1,15 @@
-import { createApp } from "@vue/runtime-dom";
-import SFC from './compiler-sfc.vue'
+// @ts-ignore
+import { compile } from 'vue';
+// @ts-ignore
+import SFC from './App.vue'
 
-const app = createApp(SFC, {
-    name: 'ddd'
+const render = compile(SFC, {
+    delimiters: undefined,
+    isCustomElement: undefined
 })
-app.mount('#app')
-console.log(`结果：`,app);
+
+// const app = createApp(SFC, {
+//     name: 'ddd'
+// })
+// app.mount('#app')
+console.log(`结果：`, render);

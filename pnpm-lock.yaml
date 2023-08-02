@@ -8,13 +8,6 @@ importers:
       '@rollup/plugin-json': ^6.0.0
       '@rollup/plugin-node-resolve': ^15.1.0
       '@types/node': ^20.4.4
-      '@vue/compiler-core': workspace:*
-      '@vue/compiler-dom': workspace:*
-      '@vue/compiler-sfc': workspace:*
-      '@vue/reactivity': workspace:*
-      '@vue/runtime-core': workspace:*
-      '@vue/runtime-dom': workspace:*
-      '@vue/shared': workspace:*
       chokidar: ^3.5.3
       esbuild: ^0.18.11
       execa: ^7.1.1
@@ -26,14 +19,9 @@ importers:
       rollup-plugin-typescript2: ^0.35.0
       socket.io: ^4.7.1
       typescript: ^5.1.6
+      vue: workspace:*
     dependencies:
-      '@vue/compiler-core': link:packages/compiler-core
-      '@vue/compiler-dom': link:packages/compiler-dom
-      '@vue/compiler-sfc': link:packages/compiler-sfc
-      '@vue/reactivity': link:packages/reactivity
-      '@vue/runtime-core': link:packages/runtime-core
-      '@vue/runtime-dom': link:packages/runtime-dom
-      '@vue/shared': link:packages/shared
+      vue: link:packages/vue
     devDependencies:
       '@rollup/plugin-commonjs': registry.npmmirror.com/@rollup/plugin-commonjs/25.0.2_rollup@3.26.1
       '@rollup/plugin-json': registry.npmmirror.com/@rollup/plugin-json/6.0.0_rollup@3.26.1
@@ -81,6 +69,24 @@ importers:
 
   packages/shared:
     specifiers: {}
+
+  packages/vue:
+    specifiers:
+      '@vue/compiler-core': workspace:*
+      '@vue/compiler-dom': workspace:*
+      '@vue/compiler-sfc': workspace:*
+      '@vue/reactivity': workspace:*
+      '@vue/runtime-core': workspace:*
+      '@vue/runtime-dom': workspace:*
+      '@vue/shared': workspace:*
+    dependencies:
+      '@vue/compiler-core': link:../compiler-core
+      '@vue/compiler-dom': link:../compiler-dom
+      '@vue/compiler-sfc': link:../compiler-sfc
+      '@vue/reactivity': link:../reactivity
+      '@vue/runtime-core': link:../runtime-core
+      '@vue/runtime-dom': link:../runtime-dom
+      '@vue/shared': link:../shared
 
 packages:
 

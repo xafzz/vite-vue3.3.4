@@ -1,0 +1,25 @@
+{
+  "name": "vue",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "module": "dist/vue.runtime.esm-bundler.js",
+  "keywords": [],
+  "author": "xafzz",
+  "license": "ISC",
+  "buildOptions": {
+    "name": "Vue",
+    "formats": [
+      "esm-bundler-runtime"
+    ]
+  },
+  "dependencies": {
+    "@vue/compiler-core": "workspace:*",
+    "@vue/compiler-dom": "workspace:*",
+    "@vue/compiler-sfc": "workspace:*",
+    "@vue/reactivity": "workspace:*",
+    "@vue/runtime-core": "workspace:*",
+    "@vue/runtime-dom": "workspace:*",
+    "@vue/shared": "workspace:*"
+  }
+}
