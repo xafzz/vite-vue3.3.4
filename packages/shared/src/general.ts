@@ -1,3 +1,4 @@
+import { makeMap } from "./makeMap"
 
 // 合并对象
 export const extend = Object.assign
@@ -18,6 +19,12 @@ export const isString = (val: unknown): val is string => typeof val === 'string'
 export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
 // object
 export const isObject = (val: unknown): val is Record<any, any> => val !== null && typeof val === 'object'
+// object
+export const EMPTY_OBJ: { readonly [key: string]: any } = __DEV__
+  ? Object.freeze({}) // 封住
+  : {}
+// array
+export const EMPTY_ARR = __DEV__ ? Object.freeze([]) : []
 
 export const NOOP = () => { }
 
@@ -34,7 +41,8 @@ export const hasChanged = (value, oldValue) => !Object.is(value, oldValue)
 // 始终是false
 export const NO = () => false
 
-
+const onRE = /^on[^a-z]/
+export const isOn = (key: string) => onRE.test(key)
 
 const cacheStringFunction = (fn) => {
   const cache: Record<string, string> = Object.create(null)
@@ -85,3 +93,40 @@ export const getGlobalThis = (): any => {
               : {})
   )
 }
+
+
+const camelizeRE = /-(\w)/g
+/**
+ * @private
+ */
+export const camelize = cacheStringFunction((str: string): string => {
+  return str.replace(camelizeRE, (_, c) => (c ? c.toUpperCase() : ''))
+})
+
+/**
+ * @private
+ */
+export const capitalize = cacheStringFunction(
+  (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+)
+
+/**
+ * @private
+ */
+export const toHandlerKey = cacheStringFunction((str: string) =>
+  str ? `on${capitalize(str)}` : ``
+)
+
+
+export const isBuiltInDirective = /*#__PURE__*/ makeMap(
+  'bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo'
+)
+
+
+export const isReservedProp = /*#__PURE__*/ makeMap(
+  // the leading comma is intentional so empty string "" is also included
+  ',key,ref,ref_for,ref_key,' +
+    'onVnodeBeforeMount,onVnodeMounted,' +
+    'onVnodeBeforeUpdate,onVnodeUpdated,' +
+    'onVnodeBeforeUnmount,onVnodeUnmounted'
+)

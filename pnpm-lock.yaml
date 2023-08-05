@@ -4,6 +4,7 @@ importers:
 
   .:
     specifiers:
+      '@babel/parser': ^7.22.6
       '@rollup/plugin-commonjs': ^25.0.2
       '@rollup/plugin-json': ^6.0.0
       '@rollup/plugin-node-resolve': ^15.1.0
@@ -21,6 +22,7 @@ importers:
       typescript: ^5.1.6
       vue: workspace:*
     dependencies:
+      '@babel/parser': registry.npmmirror.com/@babel/parser/7.22.6
       vue: link:packages/vue
     devDependencies:
       '@rollup/plugin-commonjs': registry.npmmirror.com/@rollup/plugin-commonjs/25.0.2_rollup@3.26.1

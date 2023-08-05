@@ -10,6 +10,16 @@ export function defaultOnWarn(msg) {
 }
 
 
+export interface CompilerError extends SyntaxError {
+  code: number | string
+  loc?: any
+}
+
+export interface CoreCompilerError extends CompilerError {
+  code: ErrorCodes
+}
+
+
 export const enum ErrorCodes {
     // parse errors
     ABRUPT_CLOSING_OF_EMPTY_COMMENT,

@@ -30,6 +30,7 @@ export function parse(
         console.log(print(currentFilename, 'parse(),cache里面有值了'));
         return cache
     }
+    // 输出 template 解析结构
     const descriptor = {
         filename,
         source,
@@ -197,7 +198,7 @@ export function parse(
     }
     // 写入缓存
     parseCache.set(sourceKey, result)
-    console.log(print(currentFilename, 'current'), result);
+    console.log(print(currentFilename, 'parse'), result);
     return result
 }
 

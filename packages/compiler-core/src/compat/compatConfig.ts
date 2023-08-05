@@ -1,4 +1,14 @@
 
+export type CompilerCompatConfig = Partial<
+  Record<CompilerDeprecationTypes, boolean | 'suppress-warning'>
+> & {
+  MODE?: 2 | 3
+}
+
+export interface CompilerCompatOptions {
+  compatConfig?: CompilerCompatConfig
+}
+
 export const enum CompilerDeprecationTypes {
     COMPILER_IS_ON_ELEMENT = 'COMPILER_IS_ON_ELEMENT',
     COMPILER_V_BIND_SYNC = 'COMPILER_V_BIND_SYNC',

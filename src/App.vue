@@ -1,9 +1,10 @@
 <template>
-  <div>
-    <p>hello，{{name}}</p>
+  <div id="div" class="div" data-id="ddd">
+    <p class="hoist">静态到哦</p>
+    <p :class="['class','ddd']">hello，{{name}}</p>
     <button @click="click">+1</button>
     <div>{{age}}</div>
-    <p>{{msg}}</p>
+    <p style="color:red">{{msg}}</p>
   </div>
 </template>
 

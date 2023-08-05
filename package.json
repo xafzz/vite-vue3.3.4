@@ -17,6 +17,7 @@
   "author": "xafzz",
   "license": "ISC",
   "dependencies": {
+    "@babel/parser": "^7.22.6",
     "vue": "workspace:*"
   },
   "devDependencies": {

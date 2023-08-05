@@ -64,7 +64,7 @@ function createConfig(format, output) {
     // 入口
     input: resolve(packageDir, `src/index.ts`),
     external: [
-      'lru-cache'
+      // 'lru-cache'
     ],
     plugins: [
       json(),
