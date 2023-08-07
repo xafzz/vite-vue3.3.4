@@ -165,6 +165,8 @@ export function createAppAPI(
         // 取出来的不一样
         if (!isFunction(rootComponent)) {
             rootComponent = extend({}, rootComponent)
+
+            console.log(``,879789,rootComponent);
         }
 
         // 传递给根组件的 props 必须是一个对象
@@ -252,7 +254,8 @@ export function createAppAPI(
                     if (isHydrate && hydrate) {
                         console.error(`isHydrate && hydrate`);
                         // hydrate(vnode as VNode<Node, Element>, rootContainer as any)
-                      } else {
+                    } else {
+                        console.log(``,5464563456,vnode);
                         render(vnode, rootContainer, isSVG)
                       }
                     console.log(print(filename, `mount`), vnode);

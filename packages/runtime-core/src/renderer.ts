@@ -87,6 +87,7 @@ function baseCreateRenderer(
         slotScopeIds = null,
         optimized = __DEV__ && isHmrUpdating ? false : !!n2.dynamicChildren
     ) => {
+        console.log(``, 22222);
         //两个VNode相等 不做处理
         if (n1 === n2) {
             return
@@ -102,6 +103,7 @@ function baseCreateRenderer(
         }
 
         const { type, ref, shapeFlag } = n2
+        console.log(``, 333333, type, ref, shapeFlag);
         switch (type) {
             case Text: // v-txt
                 console.error(`v-txt`,);
@@ -117,14 +119,25 @@ function baseCreateRenderer(
                 break;
             default:
                 if (shapeFlag & ShapeFlags.ELEMENT) {
-                    console.error(`shapeFlag & ShapeFlags.ELEMENT`,shapeFlag & ShapeFlags.ELEMENT);
+                    console.error(`shapeFlag & ShapeFlags.ELEMENT`, shapeFlag & ShapeFlags.ELEMENT);
                 } else if (shapeFlag & ShapeFlags.COMPONENT) {
-                    console.error(`shapeFlag & ShapeFlags.COMPONENT`,shapeFlag & ShapeFlags.COMPONENT);
+                    console.error(`shapeFlag & ShapeFlags.COMPONENT`, shapeFlag & ShapeFlags.COMPONENT);
+                    processComponent(
+                        n1,
+                        n2,
+                        container,
+                        anchor,
+                        parentComponent,
+                        parentSuspense,
+                        isSVG,
+                        slotScopeIds,
+                        optimized
+                    )
                 } else if (shapeFlag & ShapeFlags.TELEPORT) {
-                    console.error(`shapeFlag & ShapeFlags.TELEPORT`,shapeFlag & ShapeFlags.TELEPORT);
-                } else if ( shapeFlag & ShapeFlags.SUSPENSE) { // __FEATURE_SUSPENSE__
-                    console.error(`shapeFlag & ShapeFlags.SUSPENSE`,shapeFlag & ShapeFlags.SUSPENSE);
-                    
+                    console.error(`shapeFlag & ShapeFlags.TELEPORT`, shapeFlag & ShapeFlags.TELEPORT);
+                } else if (shapeFlag & ShapeFlags.SUSPENSE) { // __FEATURE_SUSPENSE__
+                    console.error(`shapeFlag & ShapeFlags.SUSPENSE`, shapeFlag & ShapeFlags.SUSPENSE);
+
                 } else if (__DEV__) {
                     console.warn('Invalid VNode type:', type, `(${typeof type})`)
                 }
@@ -268,7 +281,27 @@ function baseCreateRenderer(
         slotScopeIds: string[] | null,
         optimized: boolean
     ) => {
-        console.error(`processComponent`, n1, n2);
+        n2.slotScopeIds = slotScopeIds
+        // 第一次加载
+        if (n1 == null) {
+            if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
+                console.error(`n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE`, n1, n2);
+
+            } else { 
+                // mount
+                mountComponent(
+                  n2,
+                  container,
+                  anchor,
+                  parentComponent,
+                  parentSuspense,
+                  isSVG,
+                  optimized
+                )
+            }
+        } else { 
+            updateComponent(n1, n2, optimized)
+        }
     }
 
     const mountComponent = (
@@ -281,6 +314,9 @@ function baseCreateRenderer(
         optimized
     ) => {
         console.error(`mountComponent`, initialVNode, container);
+        // v2 false
+        const compatMountInstance = __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+        console.warn(``,compatMountInstance);
     }
 
     const updateComponent = (n1, n2, optimized: boolean) => {
@@ -401,6 +437,7 @@ function baseCreateRenderer(
         if (vnode == null) {
             console.error(`render vnode == null`,);
         } else {
+            console.log(``, 111111);
             //挂载元素
             patch(container._vnode || null, vnode, container, null, null, null, isSVG)
         }

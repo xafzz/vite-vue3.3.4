@@ -32,7 +32,7 @@ export function advancePositionWithClone(
 export function advancePositionWithMutation(
   pos,
   source,
-  numberOfCharacters
+  numberOfCharacters: number = source.length
 ) {
 
   let linesCount = 0
@@ -57,7 +57,7 @@ export function advancePositionWithMutation(
       ? pos.column + numberOfCharacters
       : numberOfCharacters - lastNewLinePos
 
-  console.log(print(currentFilename, 'advancePostionWithMutation()', '变更坐标->'), pos)
+  // console.log(print(currentFilename, 'advancePostionWithMutation()', '变更坐标->'), pos)
   return pos
 }
 

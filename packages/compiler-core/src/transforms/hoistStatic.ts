@@ -41,7 +41,7 @@ function walk(
 ) {
   // 取出子节点
   const { children } = node
-  
+
   const originalCount = children.length
   let hoistedCount = 0
 
@@ -49,14 +49,19 @@ function walk(
   // 通过递归循环 element props 
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
+    // 只有简单的元素以及文本是可以被合法提升的
     if (
       child.type === NodeTypes.ELEMENT &&
       child.tagType === ElementTypes.ELEMENT
     ) {
+      // 如果不允许被提升，则赋值 constantType NOT_CONSTANT 不可被提升的标记
+      // 否则调用 getConstantType 获取子节点的静态类型
       const constantType = doNotHoistNode ? ConstantTypes.NOT_CONSTANT : getConstantType(child, context)
-
+      // 如果获取到的 constantType 枚举值大于 NOT_CONSTANT
       if (constantType > ConstantTypes.NOT_CONSTANT) {
+        // 根据 constantType 枚举值判断是否可以被字符序列化
         if (constantType >= ConstantTypes.CAN_HOIST) {
+          // 则将子节点的 codegenNode 属性的 patchFlag 标记为 HOISTED 可提升
           // 静态标记 -1
           ; (child.codegenNode as VNodeCall).patchFlag = PatchFlags.HOISTED + (__DEV__ ? ` /* HOISTED */` : ``)
           child.codegenNode = context.hoist(child.codegenNode!)
@@ -64,11 +69,14 @@ function walk(
           continue
         }
       } else {
-        // 节点可能包含动态子节点
+        // 节点可能包含动态的子节点，但是它的 props 属性也可能能被合法提升
         // codegenNode 将 props 添加到 codegenNode.props
         const codegenNode = child.codegenNode!
         if (codegenNode.type === NodeTypes.VNODE_CALL) {
+          // 获取 patchFlag
           const flag = getPatchFlag(codegenNode)
+          // 如果不存在 flag，或者 flag 是文本类型
+          // 并且该节点 props 的 constantType 值判断出可以被提升
           if (
             (
               !flag ||
@@ -77,21 +85,25 @@ function walk(
             ) &&
             getGeneratedPropsConstantType(child, context) >= ConstantTypes.CAN_HOIST
           ) {
+            // 获取节点的 props，并在转换器上下文中执行提升操作
             const props = getNodeProps(child)
             if (props) {
               codegenNode.props = context.hoist(props)
             }
           }
+          
           // 指令 塞到 dynamicProps， @click  
           if (codegenNode.dynamicProps) {
+            console.log(``,333,child,codegenNode);
             codegenNode.dynamicProps = context.hoist(codegenNode.dynamicProps)
           }
         }
       }
     }
-
     // 循环起来
     if (child.type === NodeTypes.ELEMENT) {
+      // 如果子节点的 tagType 是组件，则继续遍历子节点
+      // 以便判断插槽中的情况
       const isComponent = child.tagType === ElementTypes.COMPONENT
       if (isComponent) {
         context.scopes.vSlot++
@@ -101,11 +113,13 @@ function walk(
         context.scopes.vSlot--
       }
     } else if (child.type === NodeTypes.FOR) {
-      // Do not hoist v-for single child because it has to be a block
+      // 查看 v-for 类型的节点是否能够被提升
+      // 但是如果 v-for 的节点中是只有一个子节点，则不能被提升
       walk(child, context, child.children.length === 1)
     } else if (child.type === NodeTypes.IF) {
+      // 如果子节点是 v-if 类型，判断它所有的分支情况
       for (let i = 0; i < child.branches.length; i++) {
-        // Do not hoist v-if single child because it has to be a block
+        // 如果只有一个分支条件，则不进行提升
         walk(
           child.branches[i],
           context,

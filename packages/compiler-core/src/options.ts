@@ -10,7 +10,7 @@ export interface ErrorHandlingOptions {
 
 export interface ParserOptions
   extends ErrorHandlingOptions,
-    CompilerCompatOptions {
+  CompilerCompatOptions {
   /**
    * e.g. platform native elements, e.g. `<div>` for browsers
    */
@@ -155,10 +155,9 @@ interface SharedTransformCodegenOptions {
    * binding access when `prefixIdentifiers` is enabled.
    */
   bindingMetadata?: BindingMetadata
-  /**
-   * Compile the function for inlining inside setup().
-   * This allows the function to directly access setup() local bindings.
-   */
+  
+  // 编译函数以便在setup（）内部进行内联。
+  // 这允许函数直接访问setup（）本地绑定。
   inline?: boolean
   /**
    * Indicates that transforms and codegen should try to output valid TS code
@@ -174,8 +173,8 @@ interface SharedTransformCodegenOptions {
 
 export interface TransformOptions
   extends SharedTransformCodegenOptions,
-    ErrorHandlingOptions,
-    CompilerCompatOptions {
+  ErrorHandlingOptions,
+  CompilerCompatOptions {
   /**
    * An array of node transforms to be applied to every AST node.
    */

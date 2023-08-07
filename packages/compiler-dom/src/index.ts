@@ -35,7 +35,7 @@ export const DOMDirectiveTransforms: Record<string, any> = {
 
 export function compile(template: string, options:any = {}) {
     // 合并 options
-    const result = baseCompile(
+    return baseCompile(
         template,
         extend({}, parserOptions, options, {
             // 节点
@@ -57,7 +57,6 @@ export function compile(template: string, options:any = {}) {
             transformHoist: __BROWSER__ ? null : stringifyStatic
         })
     )
-    console.log(print(currentFilename, 'compoiler-dom-compile()'), result)
 }
 
 export function parse(template: string, options: any = {}) {

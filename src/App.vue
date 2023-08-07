@@ -6,6 +6,8 @@
     <div>{{age}}</div>
     <p style="color:red">{{msg}}</p>
   </div>
+  <div>ddd</div>
+  <div class="ddd">ddd</div>
 </template>
 
 <script setup lang="ts">

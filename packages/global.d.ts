@@ -16,5 +16,15 @@ declare var __FEATURE_PROD_DEVTOOLS__: boolean
 declare var __VERSION__: string
 
 
+declare module 'estree-walker' {
+    export function walk<T>(
+      root: T,
+      options: {
+        enter?: (node: T, parent: T | undefined) => any
+        leave?: (node: T, parent: T | undefined) => any
+        exit?: (node: T) => any
+      } & ThisType<{ skip: () => void }>
+    )
+  }
 
 

@@ -15,6 +15,7 @@ import { transformBind } from "./transforms/vBind"
 import { transformModel } from "./transforms/vModel"
 import { transform } from "./transform"
 import { baseParse } from "./parse"
+import { generate } from "./codegen"
 
 
 const currentFilename = 'compiler-core/compile.ts'
@@ -42,22 +43,24 @@ export function baseCompile(
     const onError = options.onError || defaultOnError
     const isModuleMode = options.mode === 'module'
 
-    if (__BROWSER__) {
-        if (options.prefixIdentifiers === true) {
-            onError(createCompilerError(ErrorCodes.X_PREFIX_ID_NOT_SUPPORTED))
-        } else if (isModuleMode) {
-            onError(createCompilerError(ErrorCodes.X_MODULE_MODE_NOT_SUPPORTED))
-        }
-    }
+    // node 端 编译
+    // if (__BROWSER__) {
+    //     if (options.prefixIdentifiers === true) {
+    //         onError(createCompilerError(ErrorCodes.X_PREFIX_ID_NOT_SUPPORTED))
+    //     } else if (isModuleMode) {
+    //         onError(createCompilerError(ErrorCodes.X_MODULE_MODE_NOT_SUPPORTED))
+    //     }
+    // }
 
-    const prefixIdentifiers = !__BROWSER__ && (options.prefixIdentifiers === true || isModuleMode)
+    const prefixIdentifiers = (options.prefixIdentifiers === true || isModuleMode) // !__BROWSER__ && 
 
-    if (!prefixIdentifiers && options.cacheHandlers) {
-        onError(createCompilerError(ErrorCodes.X_CACHE_HANDLER_NOT_SUPPORTED))
-    }
-    if (options.scopeId && !isModuleMode) {
-        onError(createCompilerError(ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED))
-    }
+    // node 端 编译
+    // if (!prefixIdentifiers && options.cacheHandlers) {
+    //     onError(createCompilerError(ErrorCodes.X_CACHE_HANDLER_NOT_SUPPORTED))
+    // }
+    // if (options.scopeId && !isModuleMode) {
+    //     onError(createCompilerError(ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED))
+    // }
 
     // 解析template 生成 ast
     const ast = isString(template) ? baseParse(template, options) : template
@@ -106,12 +109,12 @@ export function baseCompile(
             )
         })
     )
-
-
-    const result = {}
-    console.error(print(currentFilename, 'baseCompile',), ast)
-
-    return result
+    return generate(
+        ast,
+        extend({}, options, {
+            prefixIdentifiers
+        })
+    )
 }
 
 // 预先整合需要用于转换的辅助函数

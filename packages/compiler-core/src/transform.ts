@@ -2,7 +2,7 @@ import { EMPTY_OBJ, NOOP, PatchFlagNames, PatchFlags, camelize, capitalize, isAr
 import { ConstantTypes, ElementTypes, NodeTypes, convertToBlock, createCacheExpression, createSimpleExpression, createVNodeCall } from "./ast";
 import { isVSlot } from "./utils";
 import { defaultOnError, defaultOnWarn } from "./errors";
-import { FRAGMENT, TO_DISPLAY_STRING, helperNameMap } from "./runtimeHelpers";
+import { CREATE_COMMENT, FRAGMENT, TO_DISPLAY_STRING, helperNameMap } from "./runtimeHelpers";
 import { hoistStatic, isSingleElementRoot } from "./transforms/hoistStatic";
 
 
@@ -223,11 +223,15 @@ export function createTransformContext(
 
 
     function addId(id: string) {
-        console.error(`addId`, id);
+        const { identifiers } = context
+        if (identifiers[id] === undefined) {
+            identifiers[id] = 0
+        }
+        identifiers[id]!++
     }
 
     function removeId(id: string) {
-        console.error(`removeId`, id);
+        context.identifiers[id]!--
     }
 
     console.log(print(currentFilename, 'createTransformContext', `创建一个上下文对象`), context)
@@ -286,8 +290,7 @@ export function traverseNode(
             if (!context.ssr) {
                 // inject import for the Comment symbol, which is needed for creating
                 // comment nodes with `createVNode`
-                // context.helper(CREATE_COMMENT)
-                console.error(`NodeTypes.COMMENT`,);
+                context.helper(CREATE_COMMENT)
             }
             break
         case NodeTypes.INTERPOLATION:   // {{ xx }}
@@ -301,9 +304,9 @@ export function traverseNode(
         case NodeTypes.IF:
             // 对v-if生成的节点束进行遍历
             // console.error(`NodeTypes.IF`,);
-            //   for (let i = 0; i < node.branches.length; i++) {
-            //     traverseNode(node.branches[i], context)
-            //   }
+              for (let i = 0; i < node.branches.length; i++) {
+                traverseNode(node.branches[i], context)
+              }
             break
         // if的分支节点，for循环节点，元素节点，根节点都会遍历其子节点，对其子节点进一步转换
         case NodeTypes.IF_BRANCH:

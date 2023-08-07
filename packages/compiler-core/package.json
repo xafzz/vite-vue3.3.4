@@ -13,5 +13,9 @@
     ]
   },
   "author": "xafzz",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "estree-walker": "^3.0.3",
+    "source-map-js": "^1.0.2"
+  }
 }

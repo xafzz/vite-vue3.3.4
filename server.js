@@ -4,8 +4,10 @@ import { fileURLToPath } from 'url';
 import { Server } from 'socket.io'
 import chokidar from 'chokidar'
 import fs, { readFileSync, statSync } from 'fs'
-import { resolve } from 'path';
+import path, { resolve } from 'path';
 import { createRequire } from 'module';
+import { sfc } from '@vue/compiler-sfc';
+import crypto from 'node:crypto'
 
 //端口号
 const port = 8888
@@ -99,6 +101,18 @@ function writeImport(content, initUrl) {
     })
 }
 
+function slash(path) {
+    const isExtendedLengthPath = /^\\\\\?\\/.test(path);
+    if (isExtendedLengthPath) {
+        return path;
+    }
+    return path.replace(/\\/g, '/');
+}
+
+function getHash(text) {
+    return crypto.createHash("sha256").update(text).digest("hex").substring(0, 8);
+}
+
 app.use(async (ctx, next) => {
 
     const { url } = ctx
@@ -158,11 +172,27 @@ app.use(async (ctx, next) => {
         // 文件内容
         let content = readFileSync(resolve(__dirname, p.slice(1)), "utf-8")
 
+        const normalizedPath = slash(path.normalize(path.relative(process.cwd(), url)));
+
+        const ast = sfc(content, {
+            root: process.cwd(),
+            filename: process.cwd() + resolve(__dirname, url),
+            scopeId: `data-v-${getHash(normalizedPath + content)}`,
+        })
+
+        const output = {
+            scriptCode: ast.script,
+            scriptSetupCode: ast.scriptSetup,
+            templateCode: ast.code,
+            stylesCode: ast.styles,
+            customBlocksCode: ast.customBlocks
+        }
+
         //写入文件
         // 将原文件处理成字符串
         ctx.type = 'application/javascript'
-        ctx.body = `
-export default ${JSON.stringify(content)}
+        ctx.body = `${ast.code}
+export default /*#__PURE__*/ ${`{'render':_sfc_render}`}
         `
     } else if (url.indexOf('@module/') > -1) { //最后处理例： from 'lru-cache'
 
@@ -237,7 +267,7 @@ watcher.on('change', async path => {
 
         console.log('change->', path)
         // 第一次有变化 通知页面loading
-        if ( time ) { 
+        if (time) {
             ioSocket.emit('first', {
                 path: path,
                 server: true,
@@ -255,6 +285,6 @@ watcher.on('change', async path => {
                 server: true,
                 client: false
             })
-        },500);
+        }, 500);
     }
 })

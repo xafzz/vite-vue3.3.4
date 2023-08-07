@@ -1,9 +1,8 @@
 import { compile } from '@vue/compiler-dom';
 import { parse } from '@vue/compiler-sfc';
 import { registerRuntimeCompiler } from '@vue/runtime-core'
-import { NOOP, extend, isString } from '@vue/shared'
+import { NOOP, extend, isString,normalizeClass,toDisplayString } from '@vue/shared'
 import { generateCodeFrame } from 'packages/shared/src/codeframe';
-
 
 // 缓存
 const compileCache: Record<string, any> = Object.create(null)
@@ -70,12 +69,15 @@ function compileToFunction(
   // 没有用vue-loader 所以将 style 跟 script 剔除
   // const vueObject = parse(template)
   // const templateAst = vueObject.descriptor.template.ast
-  
+
   const result = compile(template, opts)
-
-
-  console.log(223332, result)
-
+  return {
+    ...result,
+    code: result.code.replace(
+      /\nexport (function|const) (render|ssrRender)/,
+      "\n$1 _sfc_$2"
+    )
+  }
 }
 
 
@@ -83,3 +85,6 @@ registerRuntimeCompiler(compileToFunction)
 
 export { compileToFunction as compile }
 export * from '@vue/runtime-dom'
+export * from '@vue/runtime-core'
+
+export { parse,normalizeClass,toDisplayString }

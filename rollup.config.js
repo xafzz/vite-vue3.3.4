@@ -65,6 +65,7 @@ function createConfig(format, output) {
     input: resolve(packageDir, `src/index.ts`),
     external: [
       // 'lru-cache'
+      // 'source-map-js'
     ],
     plugins: [
       json(),

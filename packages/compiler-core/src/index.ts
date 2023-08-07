@@ -1,3 +1,5 @@
+export  { getConstantType } from "./transforms/hoistStatic";
+
 export { baseParse,TextModes } from "./parse";
 export { baseCompile } from './compile'
 
@@ -12,6 +14,9 @@ export * from './runtimeHelpers'
 
 
 export { transformOn } from './transforms/vOn'
+
+
+export { generate } from './codegen'
 
 
 // v2 compat only

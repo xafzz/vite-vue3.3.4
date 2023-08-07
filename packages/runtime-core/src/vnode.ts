@@ -418,3 +418,13 @@ export function cloneVNode(vnode,extraProps= null,mergeRef = false) {
     
     console.log(print(filename, 'cloneVNode'), vnode)
 }
+
+
+export function createElementBlock() {
+    
+}
+
+
+export function openBlock() {
+    
+}

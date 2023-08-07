@@ -28,6 +28,9 @@ export const EMPTY_ARR = __DEV__ ? Object.freeze([]) : []
 
 export const NOOP = () => { }
 
+export const isPlainObject = (val: unknown): val is object =>
+  toTypeString(val) === '[object Object]'
+
 // 数组的索引是不是一个整数
 export const isIntegerKey = (key: unknown) =>
   isString(key) &&
@@ -130,3 +133,11 @@ export const isReservedProp = /*#__PURE__*/ makeMap(
     'onVnodeBeforeUpdate,onVnodeUpdated,' +
     'onVnodeBeforeUnmount,onVnodeUnmounted'
 )
+
+const identRE = /^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$/
+
+export function genPropsAccessExp(name: string) {
+  return identRE.test(name)
+    ? `__props.${name}`
+    : `__props[${JSON.stringify(name)}]`
+}
