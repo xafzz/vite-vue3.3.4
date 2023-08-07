@@ -203,19 +203,19 @@ export function isReactive(value: unknown): boolean {
     } else { 
         result = !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
     }
-    console.log(print(filename, 'isReactive', `${result}`), value);
+    // console.log(print(filename, 'isReactive', `${result}`), value);
     return result
 }
 
 export function isReadonly(value: unknown): boolean {
     const result = !!(value && value[ReactiveFlags.IS_READONLY])
-    console.log(print(filename, 'isReadonly', `isReadonly: ${result}`), value);
+    // console.log(print(filename, 'isReadonly', `isReadonly: ${result}`), value);
     return result
 }
 
 export function isShallow(value: unknown): boolean {
     const result = !!(value && value[ReactiveFlags.IS_SHALLOW])
-    console.log(print(filename, 'isShallow', `'${value}' isShallow: ${result}`), value);
+    // console.log(print(filename, 'isShallow', `'${value}' isShallow: ${result}`), value);
     return result
 }
 

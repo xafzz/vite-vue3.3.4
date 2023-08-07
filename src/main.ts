@@ -1,26 +1,19 @@
 // @ts-ignore
 import { compile, createApp, parse } from 'vue';
 // @ts-ignore
-import SFC from './App.vue'
+import App from './App.vue'
 
-console.log(``,SFC);
+console.log(`main->render()`,App);
 
-// console.log(``, 222, rootComponent.code);
-// 除去 template
-// const objectComponent = rootComponent.ast.codegenNode.children
-
-// const app = createApp({
-//     ...rootComponent,
-//     render:rootComponent.code
-// }, {
-//     name: 'ddd'
-// })
-// app.mount('#app')
+const app = createApp(App, {
+    name: 'ddd'
+})
+app.mount('#app')
 
 
+// 运行时 编译
 // const rootComponent = compile(SFC, {
 //     mode: 'module', // import export 模式
-//     // 
 //     sourceMap: true, // 生成sourceMap
 //     inline: false, // true的时候 preamble 跟 code 分开，false 合在一起
 //     // 从脚本分析的可选绑定元数据-用于优化

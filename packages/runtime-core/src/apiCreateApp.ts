@@ -165,8 +165,6 @@ export function createAppAPI(
         // 取出来的不一样
         if (!isFunction(rootComponent)) {
             rootComponent = extend({}, rootComponent)
-
-            console.log(``,879789,rootComponent);
         }
 
         // 传递给根组件的 props 必须是一个对象
@@ -239,6 +237,8 @@ export function createAppAPI(
                     }
                     //创建组件的VNode
                     const vnode = createVNode(rootComponent, rootProps)
+
+                    console.log(print(filename, `mount`,`createVNode 创建 vnode`), vnode);
                     // 在根 VNode 上存储应用程序上下文。
                     // 这将在初始挂载时设置在根实例上。
                     vnode.appContext = context
@@ -251,14 +251,12 @@ export function createAppAPI(
                         }
                     }
 
-                    if (isHydrate && hydrate) {
-                        console.error(`isHydrate && hydrate`);
-                        // hydrate(vnode as VNode<Node, Element>, rootContainer as any)
-                    } else {
-                        console.log(``,5464563456,vnode);
-                        render(vnode, rootContainer, isSVG)
-                      }
-                    console.log(print(filename, `mount`), vnode);
+                    // if (isHydrate && hydrate) {
+                    //     console.error(`isHydrate && hydrate`);
+                    //     // hydrate(vnode as VNode<Node, Element>, rootContainer as any)
+                    // } else {
+                    //     render(vnode, rootContainer, isSVG)
+                    // }
 
                 }
             },

@@ -87,7 +87,6 @@ function baseCreateRenderer(
         slotScopeIds = null,
         optimized = __DEV__ && isHmrUpdating ? false : !!n2.dynamicChildren
     ) => {
-        console.log(``, 22222);
         //两个VNode相等 不做处理
         if (n1 === n2) {
             return
@@ -103,7 +102,7 @@ function baseCreateRenderer(
         }
 
         const { type, ref, shapeFlag } = n2
-        console.log(``, 333333, type, ref, shapeFlag);
+        
         switch (type) {
             case Text: // v-txt
                 console.error(`v-txt`,);
@@ -437,7 +436,6 @@ function baseCreateRenderer(
         if (vnode == null) {
             console.error(`render vnode == null`,);
         } else {
-            console.log(``, 111111);
             //挂载元素
             patch(container._vnode || null, vnode, container, null, null, null, isSVG)
         }

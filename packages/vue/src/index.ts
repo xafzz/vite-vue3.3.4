@@ -1,8 +1,7 @@
 import { compile } from '@vue/compiler-dom';
 import { parse } from '@vue/compiler-sfc';
 import { registerRuntimeCompiler } from '@vue/runtime-core'
-import { NOOP, extend, isString,normalizeClass,toDisplayString } from '@vue/shared'
-import { generateCodeFrame } from 'packages/shared/src/codeframe';
+import { NOOP, extend, generateCodeFrame, isString, normalizeClass, toDisplayString } from '@vue/shared'
 
 // 缓存
 const compileCache: Record<string, any> = Object.create(null)

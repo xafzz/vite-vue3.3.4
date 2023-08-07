@@ -78,6 +78,7 @@ export function normalizeClass(value: unknown): string {
       }
     }
   }
+  
   return res.trim()
 }
 

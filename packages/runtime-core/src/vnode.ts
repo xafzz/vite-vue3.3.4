@@ -21,98 +21,98 @@ export const Fragment = Symbol.for('v-fgt') as any as {
 }
 
 export interface VNode<
-  HostNode,
-  HostElement,
-  ExtraProps = { [key: string]: any }
+    HostNode,
+    HostElement,
+    ExtraProps = { [key: string]: any }
 > {
-  /**
-   * @internal
-   */
-  __v_isVNode: true
+    /**
+     * @internal
+     */
+    __v_isVNode: true
 
-  /**
-   * @internal
-   */
-  [ReactiveFlags.SKIP]: true
+    /**
+     * @internal
+     */
+    [ReactiveFlags.SKIP]: true
 
-  type: any
-  props: (VNodeProps & ExtraProps) | null
-  key: string | number | symbol | null
-  ref:  null
-  /**
-   * SFC only. This is assigned on vnode creation using currentScopeId
-   * which is set alongside currentRenderingInstance.
-   */
-  scopeId: string | null
-  /**
-   * SFC only. This is assigned to:
-   * - Slot fragment vnodes with :slotted SFC styles.
-   * - Component vnodes (during patch/hydration) so that its root node can
-   *   inherit the component's slotScopeIds
-   * @internal
-   */
-  slotScopeIds: string[] | null
-  children: any
-  component: null
-  dirs:  null
-  transition: null
+    type: any
+    props: (VNodeProps & ExtraProps) | null
+    key: string | number | symbol | null
+    ref: null
+    /**
+     * SFC only. This is assigned on vnode creation using currentScopeId
+     * which is set alongside currentRenderingInstance.
+     */
+    scopeId: string | null
+    /**
+     * SFC only. This is assigned to:
+     * - Slot fragment vnodes with :slotted SFC styles.
+     * - Component vnodes (during patch/hydration) so that its root node can
+     *   inherit the component's slotScopeIds
+     * @internal
+     */
+    slotScopeIds: string[] | null
+    children: any
+    component: null
+    dirs: null
+    transition: null
 
-  // DOM
-  el: HostNode | null
-  anchor: HostNode | null // fragment anchor
-  target: HostElement | null // teleport target
-  targetAnchor: HostNode | null // teleport target anchor
-  /**
-   * number of elements contained in a static vnode
-   * @internal
-   */
-  staticCount: number
+    // DOM
+    el: HostNode | null
+    anchor: HostNode | null // fragment anchor
+    target: HostElement | null // teleport target
+    targetAnchor: HostNode | null // teleport target anchor
+    /**
+     * number of elements contained in a static vnode
+     * @internal
+     */
+    staticCount: number
 
-  // suspense
-  suspense:  null
-  /**
-   * @internal
-   */
-  ssContent:  null
-  /**
-   * @internal
-   */
-  ssFallback:  null
+    // suspense
+    suspense: null
+    /**
+     * @internal
+     */
+    ssContent: null
+    /**
+     * @internal
+     */
+    ssFallback: null
 
-  // optimization only
-  shapeFlag: number
-  patchFlag: number
-  /**
-   * @internal
-   */
-  dynamicProps: string[] | null
-  /**
-   * @internal
-   */
-  dynamicChildren: null
+    // optimization only
+    shapeFlag: number
+    patchFlag: number
+    /**
+     * @internal
+     */
+    dynamicProps: string[] | null
+    /**
+     * @internal
+     */
+    dynamicChildren: null
 
-  // application root node only
-  appContext: AppContext | null
+    // application root node only
+    appContext: AppContext | null
 
-  /**
-   * @internal lexical scope owner instance
-   */
-  ctx:  null
+    /**
+     * @internal lexical scope owner instance
+     */
+    ctx: null
 
-  /**
-   * @internal attached by v-memo
-   */
-  memo?: any[]
-  /**
-   * @internal __COMPAT__ only
-   */
-  isCompatRoot?: true
-  /**
-   * @internal custom element interception hook
-   */
-  ce?: (instance) => void
+    /**
+     * @internal attached by v-memo
+     */
+    memo?: any[]
+    /**
+     * @internal __COMPAT__ only
+     */
+    isCompatRoot?: true
+    /**
+     * @internal custom element interception hook
+     */
+    ce?: (instance) => void
 }
-  
+
 // https://github.com/microsoft/TypeScript/issues/33099
 export type VNodeProps = {
     key?: string | number | symbol
@@ -179,22 +179,30 @@ function _createVNode(
         type = Comment
     }
 
-    // 不是 node
+    // <component :is="vnode"/>
+    // __v_isVNode
     if (isVNode(type)) {
-        console.error(`isVNode`);
+        console.error(`isVNode(type)`, type);
     }
 
     // __vccOpts判断是否是class组件
     if (isClassComponent(type)) {
-        console.error(`isClassComponent`);
+        console.error(`isClassComponent(type)`);
     }
 
     // 兼容 v2
     if (__COMPAT__) { }
 
-    //将非字符串的class转化为字符串
-    //将代理过的style浅克隆在转为标准化
+    /**
+     * 初始加载时：
+     * const app = createApp(App, {
+     *    name: 'ddd'
+     * })
+     * 
+     * props：{ name: 'ddd' }
+     */
     if (props) {
+        console.log(``, 2222, props);
         //对于代理过的对象,我们需要克隆来使用他们
         //因为直接修改会导致触发响应式
         props = guardReactiveProps(props)!
@@ -246,7 +254,7 @@ function _createVNode(
         isBlockNode,
         true
     )
-    console.log(print(filename, '_createVNode'), result)
+    console.log(print(filename, '_createVNode',`createBaseVNode as createElementVNode 创建：`), result)
     return result
 }
 
@@ -339,9 +347,10 @@ function createBaseVNode(
         appContext: null, //app上下文
         ctx: currentRenderingInstance
     };
-    console.error(`${ type as any }--->`, vnode)
+    console.error(`${type as any}--->`, vnode)
 
     //是否需要对children进行标准化
+    // 初始化 children = null
     if (needFullChildrenNormalization) {
         // children 根 type 重新赋值
         normalizeChildren(vnode, children);
@@ -351,8 +360,15 @@ function createBaseVNode(
             //赋值ssContent=>default和ssFallback=>fallback
             // type.normalize(vnode);
         }
-    } else if (children) {
-        console.error(`children`, children);
+    }
+    // 有子节点
+    // _createElementVNode("p", { class: "hoist" }, "静态到哦", -1 /* HOISTED */)
+    // _createElementVNode("div", null, "ddd", -1 /* HOISTED */)
+    else if (children) {
+        // 字符串/数组
+        vnode.shapeFlag |= isString(children)
+            ? ShapeFlags.TEXT_CHILDREN
+            : ShapeFlags.ARRAY_CHILDREN
     }
 
     // validate key
@@ -380,7 +396,7 @@ function createBaseVNode(
     // 不兼容
     if (__COMPAT__) { }
 
-    console.log(print(filename, 'createBaseVNode|createElementVNode'), vnode)
+    console.log(print(filename, 'createBaseVNode|createElementVNode', `创建 '${type}' vnode对象`), vnode)
     return vnode
 }
 
@@ -414,17 +430,18 @@ export function normalizeChildren(vnode, children) {
     console.log(print(filename, 'normalizeChildren', '虚拟节点的children属性，主要是对slots属性的处理'), vnode.children, vnode.shapeFlag)
 }
 
-export function cloneVNode(vnode,extraProps= null,mergeRef = false) {
-    
-    console.log(print(filename, 'cloneVNode'), vnode)
+export function cloneVNode(vnode, extraProps = null, mergeRef = false) {
+
+    console.error(print(filename, 'cloneVNode'), vnode)
 }
 
 
 export function createElementBlock() {
-    
+    console.error(print(filename, 'createElementBlock'))
 }
 
 
 export function openBlock() {
-    
+
+    console.error(print(filename, 'openBlock'))
 }
