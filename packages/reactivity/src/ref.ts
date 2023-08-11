@@ -1,5 +1,5 @@
 import { IfAny, hasChanged, isArray, isFunction, isObject, print } from "@vue/shared";
-import { isProxy, isReadonly, isShallow, toRaw, toReactive } from "./reactive";
+import { isProxy, isReactive, isReadonly, isShallow, toRaw, toReactive } from "./reactive";
 import { activeEffect, getDepFromReactive, shouldTrack, trackEffects, triggerEffects } from "./effect";
 import { Dep, createDep } from "./dep";
 import { TrackOpTypes, TriggerOpTypes } from "./operations";
@@ -229,3 +229,36 @@ export function toRefs(object) {
 
 export type MaybeRef<T = any> = T | Ref<T>
 export type MaybeRefOrGetter<T = any> = MaybeRef<T> | (() => T)
+
+
+const shallowUnwrapHandlers: ProxyHandler<any> = {
+    get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
+    set: (target, key, value, receiver) => {
+      const oldValue = target[key]
+      if (isRef(oldValue) && !isRef(value)) {
+        oldValue.value = value
+        return true
+      } else {
+        return Reflect.set(target, key, value, receiver)
+      }
+    }
+  }
+
+/**
+ * Returns a reactive proxy for the given object.
+ *
+ * If the object already is reactive, it's returned as-is. If not, a new
+ * reactive proxy is created. Direct child properties that are refs are properly
+ * handled, as well.
+ *
+ * @param objectWithRefs - Either an already-reactive object or a simple object
+ * that contains refs.
+ */
+export function proxyRefs<T extends object>(
+    objectWithRefs: T
+  ): any {
+    return isReactive(objectWithRefs)
+      ? objectWithRefs
+      : new Proxy(objectWithRefs, shallowUnwrapHandlers)
+  }
+  

@@ -174,26 +174,32 @@ app.use(async (ctx, next) => {
 
         const normalizedPath = slash(path.normalize(path.relative(process.cwd(), url)));
 
+        const __hmrId = getHash(normalizedPath + content)
+        const __scopeId = `data-v-${__hmrId}`
         const ast = sfc(content, {
             root: process.cwd(),
             filename: process.cwd() + resolve(__dirname, url),
-            scopeId: `data-v-${getHash(normalizedPath + content)}`,
+            scopeId: __scopeId,
         })
-
-        const output = {
-            scriptCode: ast.script,
-            scriptSetupCode: ast.scriptSetup,
-            templateCode: ast.code,
-            stylesCode: ast.styles,
-            customBlocksCode: ast.customBlocks
-        }
+        
+        // const output = {
+        //     scriptCode: ast.script,
+        //     scriptSetupCode: ast.scriptSetup,
+        //     templateCode: ast.code,
+        //     stylesCode: ast.styles,
+        //     customBlocksCode: ast.customBlocks
+        // }
 
         //写入文件
         // 将原文件处理成字符串
         ctx.type = 'application/javascript'
         ctx.body = `${ast.code}
-export default /*#__PURE__*/ ${`{'render':_sfc_render}`}
-        `
+        
+const __hmrId = '${getHash(normalizedPath + content)}'
+const __scopeId = 'data-v-${__hmrId}'
+        
+export default /*#__PURE__*/ ${`{'render':_sfc_render,'__hmrId':__hmrId,'__scopeId':__scopeId}`}`
+        // ctx.body = `export default ${JSON.stringify(content)}`
     } else if (url.indexOf('@module/') > -1) { //最后处理例： from 'lru-cache'
 
         if (url.endsWith('.map')) {

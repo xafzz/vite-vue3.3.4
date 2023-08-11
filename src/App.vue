@@ -3,11 +3,11 @@
     <p class="hoist">静态到哦</p>
     <p :class="['class','ddd']">hello，{{name}}</p>
     <button @click="click">+1</button>
-    <div>{{age}}</div>
-    <p style="color:red">{{msg}}</p>
+    <div id="xx">22,{{age}}</div>
+    <p style="color:red">333,{{msg}}</p>
   </div>
-  <div>ddd</div>
-  <div class="ddd">ddd</div>
+  <div >ddd12312312321</div>
+  <div class="ddd">66667</div>
 </template>
 
 <script setup lang="ts">

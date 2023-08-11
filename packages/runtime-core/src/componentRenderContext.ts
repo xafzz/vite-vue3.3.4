@@ -4,16 +4,39 @@
 
 // 标记当前呈现实例以进行资产解析
 // 例如:resolveComponent、resolveDirective
-export let currentRenderingInstance:  null = null
+export let currentRenderingInstance: null = null
 export let currentScopeId: string | null = null
+
+/**
+ * Note: rendering calls maybe nested. The function returns the parent rendering
+ * instance if present, which should be restored after the render is done:
+ *
+ * ```js
+ * const prev = setCurrentRenderingInstance(i)
+ * // ...render
+ * setCurrentRenderingInstance(prev)
+ * ```
+ */
+export function setCurrentRenderingInstance(
+  instance: any | null
+): any | null {
+  const prev = currentRenderingInstance
+  currentRenderingInstance = instance
+  currentScopeId = (instance && instance.type.__scopeId) || null
+  // v2 pre-compiled components uses _scopeId instead of __scopeId
+  if (__COMPAT__ && !currentScopeId) {
+    currentScopeId = (instance && (instance.type as any)._scopeId) || null
+  }
+  return prev
+}
 
 /**
  * Set scope id when creating hoisted vnodes.
  * @private compiler helper
  */
 export function pushScopeId(id: string | null) {
-    currentScopeId = id
-  }
+  currentScopeId = id
+}
 
 /**
  * Technically we no longer need this after 3.0.8 but we need to keep the same
@@ -21,5 +44,5 @@ export function pushScopeId(id: string | null) {
  * @private
  */
 export function popScopeId() {
-    currentScopeId = null
-  }
+  currentScopeId = null
+}

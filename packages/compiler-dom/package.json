@@ -10,10 +10,7 @@
     "name": "VueCompilerDOM",
     "compat": true,
     "formats": [
-      "esm-bundler",
-      "esm-browser",
-      "cjs",
-      "global"
+      "esm-bundler"
     ]
   }
 }

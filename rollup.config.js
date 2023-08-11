@@ -83,14 +83,16 @@ function createConfig(format, output) {
         minify: false,
         target:'es2015',
         define: {
-          __DEV__: 'true',
+          __DEV__: 'false',
           __BROWSER__: 'true',
           __NUMBER__: '1',
           __VERSION__: `'${version}'`,
           __TEST__: 'false',
           __COMPAT__: 'false',
           __ESM_BUNDLER__: 'false',
-          __FEATURE_PROD_DEVTOOLS__: 'false'
+          __FEATURE_PROD_DEVTOOLS__: 'false',
+          __FEATURE_OPTIONS_API__: 'false',
+          __FEATURE_SUSPENSE__: 'false'
         }
       }),
     ],

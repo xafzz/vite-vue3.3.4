@@ -1,4 +1,4 @@
-import { isObject, print, toRawType } from "@vue/shared"
+import { def, isObject, print, toRawType } from "@vue/shared"
 import { mutableHandlers, readonlyHandlers, shallowReactiveHandlers, shallowReadonlyHandlers } from './baseHandlers'
 import { mutableCollectionHandlers, readyonlyCollectionHandlers, shallowCollectionHandlers, shallowReadonlyCollectionHandlers } from "./collectionHandlers"
 
@@ -109,7 +109,7 @@ function createReactiveObject(
     collectionHandlers, // 针对集合的proxy捕获器
     proxyMap    // 一个用于缓存的proxy的weekMap对象
 ) {
-    
+
     // 不是 object 直接返回 target
     if (!isObject(target)) {
         if (__DEV__) {
@@ -158,8 +158,8 @@ function createReactiveObject(
         //                                  set map weekSet weekMap  Object Array
         targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers
     )
-    proxyMap.set(target,proxy)
-    console.log(print(filename, 'createReactiveObject','reactive核心函数'), proxy);
+    proxyMap.set(target, proxy)
+    console.log(print(filename, 'createReactiveObject', 'reactive核心函数'), proxy);
     return proxy
 }
 
@@ -199,8 +199,8 @@ export const toReactive = value => {
 export function isReactive(value: unknown): boolean {
     let result
     if (isReadonly(value)) {
-        result= isReactive((value as Target)[ReactiveFlags.RAW])
-    } else { 
+        result = isReactive((value as Target)[ReactiveFlags.RAW])
+    } else {
         result = !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
     }
     // console.log(print(filename, 'isReactive', `${result}`), value);
@@ -219,6 +219,34 @@ export function isShallow(value: unknown): boolean {
     return result
 }
 
-export function isProxy(object) { 
+export function isProxy(object) {
     return isReactive(object) || isReadonly(object)
+}
+
+
+/**
+ * Marks an object so that it will never be converted to a proxy. Returns the
+ * object itself.
+ *
+ * @example
+ * ```js
+ * const foo = markRaw({})
+ * console.log(isReactive(reactive(foo))) // false
+ *
+ * // also works when nested inside other reactive objects
+ * const bar = reactive({ foo })
+ * console.log(isReactive(bar.foo)) // false
+ * ```
+ *
+ * **Warning:** `markRaw()` together with the shallow APIs such as
+ * {@link shallowReactive()} allow you to selectively opt-out of the default
+ * deep reactive/readonly conversion and embed raw, non-proxied objects in your
+ * state graph.
+ *
+ * @param value - The object to be marked as "raw".
+ * @see {@link https://vuejs.org/api/reactivity-advanced.html#markraw}
+ */
+export function markRaw(value) {
+    def(value, ReactiveFlags.SKIP, true)
+    return value
 }

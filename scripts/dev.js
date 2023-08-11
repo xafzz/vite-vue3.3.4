@@ -11,7 +11,7 @@ buildAll(dirs)
 
 async function buildAll(dirs) {
     await runParallel(build,dirs).then(() => {
-        console.log('ok')
+        console.log('------>ok')
     }).catch(e => {
         console.log(e);
     })

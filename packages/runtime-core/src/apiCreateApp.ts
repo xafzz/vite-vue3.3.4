@@ -1,6 +1,7 @@
 import { NO, extend, isFunction, isObject, print } from "@vue/shared";
 import { version } from ".";
 import { VNode, cloneVNode, createVNode } from "./vnode";
+import { Data } from "./component";
 
 
 const filename = 'runtime-core/apiCreateApp.ts'
@@ -149,6 +150,11 @@ export type Plugin<Options = any[]> =
     }
 
 
+export type CreateAppFunction<HostElement> = (
+    rootComponent: any,
+    rootProps?: Data | null
+) => App<HostElement>
+
 /**
  * @internal Used to identify the current app when using `inject()` within
  * `app.runWithContext()`.
@@ -178,7 +184,7 @@ export function createAppAPI(
         // 储存安装过的插件
         const installedPlugins = new Set()
 
-        const isMounted = false
+        let isMounted = false
 
         const app = (context.app = {
             _uid: uid++, //标识组件的唯一id
@@ -238,7 +244,6 @@ export function createAppAPI(
                     //创建组件的VNode
                     const vnode = createVNode(rootComponent, rootProps)
 
-                    console.log(print(filename, `mount`,`createVNode 创建 vnode`), vnode);
                     // 在根 VNode 上存储应用程序上下文。
                     // 这将在初始挂载时设置在根实例上。
                     vnode.appContext = context
@@ -251,12 +256,15 @@ export function createAppAPI(
                         }
                     }
 
-                    // if (isHydrate && hydrate) {
-                    //     console.error(`isHydrate && hydrate`);
-                    //     // hydrate(vnode as VNode<Node, Element>, rootContainer as any)
-                    // } else {
-                    //     render(vnode, rootContainer, isSVG)
-                    // }
+                    if (isHydrate && hydrate) {
+                        console.error(`isHydrate && hydrate`);
+                        // hydrate(vnode as VNode<Node, Element>, rootContainer as any)
+                    } else {
+                        render(vnode, rootContainer, isSVG)
+                    }
+
+                    isMounted = true
+                    app._container = rootContainer
 
                 }
             },

@@ -18,6 +18,7 @@ const constantBailRE = /\w\s*\(|\.[^\d]/
 // 对表达式进行检查，确保表达式里不包含关键字，无论是插值还是指令中是否包含非法的关键字，
 // 比如{{ let a }} {{ for }}
 export const transformExpression = (node, context) => {
+
   // 如果是插值的话
   if (node.type === NodeTypes.INTERPOLATION) {
     // 验证表达式是否没问题，是否含有关键字等
@@ -25,13 +26,13 @@ export const transformExpression = (node, context) => {
       node.content as any,
       context
     )
-
   }
   // 如果是元素节点
   else if (node.type === NodeTypes.ELEMENT) {
     // 处理元素上的属性
     for (let i = 0; i < node.props.length; i++) {
       const dir = node.props[i]
+      
       // 不处理v-on和v-for，因为它们是特殊处理的
       if (dir.type === NodeTypes.DIRECTIVE && dir.name !== 'for') {
         /**
@@ -71,6 +72,7 @@ export const transformExpression = (node, context) => {
 // 重要提示：由于此函数只使用Node.js依赖项，因此它应该
 // 总是与前导词一起使用__BROWSER__检查，以便
 // tree-shaken 从浏览器构建中动摇。
+// {{ xx }} 生成过程中 content = _ctx.xx
 export function processExpression(
   node,
   context,
@@ -81,7 +83,7 @@ export function processExpression(
   asRawStatements = false,
   localVars: Record<string, number> = Object.create(context.identifiers)
 ) {
-
+  
   if (!context.prefixIdentifiers || !node.content.trim()) {
     return node
   }
@@ -89,6 +91,8 @@ export function processExpression(
   const { inline, bindingMetadata } = context
   const rewriteIdentifier = (raw: string, parent?: any, id?: any) => {
     const type = hasOwn(bindingMetadata, raw) && bindingMetadata[raw]
+
+    
     if (inline) {
       // x = y
       const isAssignmentLVal =

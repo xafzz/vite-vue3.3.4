@@ -1,11 +1,13 @@
-import { PatchFlags, ShapeFlags, extend, isArray, isFunction, isObject, isString, print } from "@vue/shared"
+import { EMPTY_ARR, PatchFlags, ShapeFlags, extend, isArray, isFunction, isObject, isOn, isString, normalizeClass, normalizeStyle, print } from "@vue/shared"
 import { currentRenderingInstance, currentScopeId } from "./componentRenderContext";
 import { NULL_DYNAMIC_COMPONENT } from "./helpers/resolveAssets";
-import { isClassComponent } from "./components";
+import { Data, isClassComponent } from "./component";
 import { ReactiveFlags, isProxy, isRef, toRaw } from "@vue/reactivity";
 import { isSuspense } from "./components/Suspense";
 import { isTeleport } from "./components/Teleport";
 import { AppContext } from "./apiCreateApp";
+import { ErrorCodes, callWithAsyncErrorHandling } from "./errorHandling";
+import { defineLegacyVNodeProperties } from "./compat/renderFn";
 
 const filename = 'runtime-core/vnode.ts'
 
@@ -164,7 +166,7 @@ export const createVNode = __DEV__ ? createVNodeWithArgsTransform : _createVNode
  */
 function _createVNode(
     type,
-    props,
+    props: any | null = null,
     children: unknown = null,
     patchFlag: number = 0,
     dynamicProps: string[] | null = null,
@@ -254,7 +256,7 @@ function _createVNode(
         isBlockNode,
         true
     )
-    console.log(print(filename, '_createVNode',`createBaseVNode as createElementVNode 创建：`), result)
+    console.log(print(filename, '_createVNode', `createBaseVNode as createElementVNode 创建：`), result)
     return result
 }
 
@@ -347,7 +349,7 @@ function createBaseVNode(
         appContext: null, //app上下文
         ctx: currentRenderingInstance
     };
-    console.error(`${type as any}--->`, vnode)
+    // console.error(`${type as any}--->`, vnode)
 
     //是否需要对children进行标准化
     // 初始化 children = null
@@ -389,14 +391,13 @@ function createBaseVNode(
         // 由于缓存处理程序的原因，vnode 不应被视为动态节点。
         vnode.patchFlag !== PatchFlags.HYDRATE_EVENTS
     ) {
-        console.error(``, 1);
         currentBlock.push(vnode)
     }
 
     // 不兼容
     if (__COMPAT__) { }
 
-    console.log(print(filename, 'createBaseVNode|createElementVNode', `创建 '${type}' vnode对象`), vnode)
+    console.log(print(filename, 'createBaseVNode|createElementVNode', `vnode对象:`), vnode)
     return vnode
 }
 
@@ -430,18 +431,223 @@ export function normalizeChildren(vnode, children) {
     console.log(print(filename, 'normalizeChildren', '虚拟节点的children属性，主要是对slots属性的处理'), vnode.children, vnode.shapeFlag)
 }
 
+export function normalizeVNode(child: any): any {
+    if (child == null || typeof child === 'boolean') {
+        // 空占位符
+        return createVNode(Comment)
+    } else if (isArray(child)) {
+        // fragment
+        return createVNode(
+            Fragment,
+            null,
+            // #3666, avoid reference pollution when reusing vnode
+            child.slice()
+        )
+    } else if (typeof child === 'object') {
+        // 已经是vnode了，这应该是编译模板以来最常见的了
+        // 始终生成全 vnode 子数组
+        return cloneIfMounted(child)
+    } else {
+        // strings and numbers
+        return createVNode(Text, null, String(child))
+    }
+}
+
+// optimized normalization for template-compiled render fns
+export function cloneIfMounted(child: any): any {
+    return (child.el === null && child.patchFlag !== PatchFlags.HOISTED) ||
+        child.memo
+        ? child
+        : cloneVNode(child)
+}
+
+// clone 一个 vnode
 export function cloneVNode(vnode, extraProps = null, mergeRef = false) {
+ // This is intentionally NOT using spread or extend to avoid the runtime
+  // key enumeration cost.
+  const { props, ref, patchFlag, children } = vnode
+  const mergedProps = extraProps ? mergeProps(props || {}, extraProps) : props
+  const cloned: any= {
+    __v_isVNode: true,
+    __v_skip: true,
+    type: vnode.type,
+    props: mergedProps,
+    key: mergedProps && normalizeKey(mergedProps),
+    ref:
+      extraProps && extraProps.ref
+        ? // #2078 in the case of <component :is="vnode" ref="extra"/>
+          // if the vnode itself already has a ref, cloneVNode will need to merge
+          // the refs so the single vnode can be set on multiple refs
+          mergeRef && ref
+          ? isArray(ref)
+            ? ref.concat(normalizeRef(extraProps)!)
+            : [ref, normalizeRef(extraProps)!]
+          : normalizeRef(extraProps)
+        : ref,
+    scopeId: vnode.scopeId,
+    slotScopeIds: vnode.slotScopeIds,
+    children:
+      __DEV__ && patchFlag === PatchFlags.HOISTED && isArray(children)
+        ? (children as any[]).map(deepCloneVNode)
+        : children,
+    target: vnode.target,
+    targetAnchor: vnode.targetAnchor,
+    staticCount: vnode.staticCount,
+    shapeFlag: vnode.shapeFlag,
+    // if the vnode is cloned with extra props, we can no longer assume its
+    // existing patch flag to be reliable and need to add the FULL_PROPS flag.
+    // note: preserve flag for fragments since they use the flag for children
+    // fast paths only.
+    patchFlag:
+      extraProps && vnode.type !== Fragment
+        ? patchFlag === -1 // hoisted node
+          ? PatchFlags.FULL_PROPS
+          : patchFlag | PatchFlags.FULL_PROPS
+        : patchFlag,
+    dynamicProps: vnode.dynamicProps,
+    dynamicChildren: vnode.dynamicChildren,
+    appContext: vnode.appContext,
+    dirs: vnode.dirs,
+    transition: vnode.transition,
 
-    console.error(print(filename, 'cloneVNode'), vnode)
+    // These should technically only be non-null on mounted VNodes. However,
+    // they *should* be copied for kept-alive vnodes. So we just always copy
+    // them since them being non-null during a mount doesn't affect the logic as
+    // they will simply be overwritten.
+    component: vnode.component,
+    suspense: vnode.suspense,
+    ssContent: vnode.ssContent && cloneVNode(vnode.ssContent),
+    ssFallback: vnode.ssFallback && cloneVNode(vnode.ssFallback),
+    el: vnode.el,
+    anchor: vnode.anchor,
+    ctx: vnode.ctx,
+    ce: vnode.ce
+  }
+  if (__COMPAT__) {
+    defineLegacyVNodeProperties(cloned as any)
+  }
+  return cloned as any
+}
+
+/**
+ * Dev only, for HMR of hoisted vnodes reused in v-for
+ * https://github.com/vitejs/vite/issues/2022
+ */
+function deepCloneVNode(vnode: any): any {
+    const cloned = cloneVNode(vnode)
+    if (isArray(vnode.children)) {
+      cloned.children = (vnode.children as any[]).map(deepCloneVNode)
+    }
+    return cloned
+  }
+
+/**
+ * @private
+ */
+// 创建对应的元素 vnode
+export function createElementBlock(
+    type: string | typeof Fragment,
+    props?: Record<string, any> | null,
+    children?: any,
+    patchFlag?: number,
+    dynamicProps?: string[],
+    shapeFlag?: number
+) {
+    const result =  setupBlock(
+        createBaseVNode(
+            type,
+            props,
+            children,
+            patchFlag,
+            dynamicProps,
+            shapeFlag,
+            true /* isBlock */
+        )
+    )
+    return result
 }
 
 
-export function createElementBlock() {
-    console.error(print(filename, 'createElementBlock'))
+function setupBlock(vnode: any) {
+    // save current block children on the block vnode
+    vnode.dynamicChildren =
+      isBlockTreeEnabled > 0 ? currentBlock || (EMPTY_ARR as any) : null
+    // close block
+    closeBlock()
+    // a block is always going to be patched, so track it as a child of its
+    // parent block
+    if (isBlockTreeEnabled > 0 && currentBlock) {
+      currentBlock.push(vnode)
+    }
+    return vnode
+  }
+
+/**
+ *  Open a block
+ * 这必须在`createBlock`之前调用。它不能是`createBlock`的一部分
+ * 因为块的子块是在 `createBlock` 本身之前评估的
+ * 生成的代码通常如下所示：
+ * ```js
+ * function render() {
+ *   return (openBlock(),createBlock('div', null, [...]))
+ * }
+ * ```
+ * 创建 v-for 片段块时，disableTracking 为 true，因为 v-for
+ * 片段总是区分它的子片段。
+ *
+ * @private
+ */
+export function openBlock(disableTracking = false) {
+    blockStack.push((currentBlock = disableTracking ? null : []))
 }
 
+export function closeBlock() {
+    blockStack.pop()
+    currentBlock = blockStack[blockStack.length - 1] || null
+  }
 
-export function openBlock() {
 
-    console.error(print(filename, 'openBlock'))
-}
+  // 合并 props
+export function mergeProps(...args: (Data & VNodeProps)[]) {
+    const ret: Data = {}
+    for (let i = 0; i < args.length; i++) {
+      const toMerge = args[i]
+      for (const key in toMerge) {
+        if (key === 'class') {
+          if (ret.class !== toMerge.class) {
+            ret.class = normalizeClass([ret.class, toMerge.class])
+          }
+        } else if (key === 'style') {
+          ret.style = normalizeStyle([ret.style, toMerge.style])
+        } else if (isOn(key)) {
+          const existing = ret[key]
+          const incoming = toMerge[key]
+          if (
+            incoming &&
+            existing !== incoming &&
+            !(isArray(existing) && existing.includes(incoming))
+          ) {
+            ret[key] = existing
+              ? [].concat(existing as any, incoming as any)
+              : incoming
+          }
+        } else if (key !== '') {
+          ret[key] = toMerge[key]
+        }
+      }
+    }
+    return ret
+  }
+  
+  export function invokeVNodeHook(
+    hook: any,
+    instance: any | null,
+    vnode: any,
+    prevVNode: any | null = null
+  ) {
+    callWithAsyncErrorHandling(hook, instance, ErrorCodes.VNODE_HOOK, [
+      vnode,
+      prevVNode
+    ])
+  }
+  

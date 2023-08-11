@@ -17,6 +17,7 @@ export function transform(root, options) {
     // 整个AST转化环节最核心的方法
     //  遍历所有节点，执行转换
     traverseNode(root, context)
+    
     // 如果编译选项中打开了 hoistStatic 开关，则进行静态提升
     // 默认开启
     if (options.hoistStatic) {
@@ -29,6 +30,7 @@ export function transform(root, options) {
          */
         hoistStatic(root, context)
     }
+    
     // 不能是 ssr
     if (!options.ssr) {
         // 这时候在 root 下 codegenNode 还是 undefined,
@@ -198,6 +200,7 @@ export function createTransformContext(
                 removeId(exp.content)
             }
         },
+        // const _hoisted_5 = { style: {"color":"red"} }
         hoist(exp) {
             if (isString(exp)) exp = createSimpleExpression(exp)
             context.hoists.push(exp)
@@ -284,6 +287,7 @@ export function traverseNode(
             node = context.currentNode
         }
     }
+
     // 当前节点遍历完转换函数后，根据当前节点的类型，执行不同的分支
     switch (node.type) {
         case NodeTypes.COMMENT: //注释
@@ -304,9 +308,9 @@ export function traverseNode(
         case NodeTypes.IF:
             // 对v-if生成的节点束进行遍历
             // console.error(`NodeTypes.IF`,);
-              for (let i = 0; i < node.branches.length; i++) {
+            for (let i = 0; i < node.branches.length; i++) {
                 traverseNode(node.branches[i], context)
-              }
+            }
             break
         // if的分支节点，for循环节点，元素节点，根节点都会遍历其子节点，对其子节点进一步转换
         case NodeTypes.IF_BRANCH:
@@ -426,6 +430,7 @@ function createRootCodegen(root: any, context: any) {
     const { helper } = context
     const { children } = root
 
+
     // 只存在一个一级节点
     if (children.length === 1) {
         const child = children[0]
@@ -439,8 +444,12 @@ function createRootCodegen(root: any, context: any) {
                 convertToBlock(codegenNode, context)
             }
             root.codegenNode = codegenNode
+        } else {
+            // - single <slot/>, IfNode, ForNode: already blocks.
+            // - single text node: always patched.
+            // root codegen falls through via genNode()
+            root.codegenNode = child
         }
-
     }
     // v3 可以有多个一级节点
     else if (children.length > 1) {
@@ -472,5 +481,5 @@ function createRootCodegen(root: any, context: any) {
     } else {
         // 不能存在
     }
-    console.log(print(currentFilename, 'createRootCodegen', `设置 codegenNode`), root)
+    console.log(print(currentFilename, 'createRootCodegen', `设置 codegenNode`), root.codegenNode)
 }

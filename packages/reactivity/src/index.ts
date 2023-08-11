@@ -6,7 +6,11 @@ export {
     isRef,
     unref,
     toRef,
-    toRefs
+    toRefs,
+
+    Ref,
+
+    proxyRefs
 } from './ref'
 
 export {
@@ -19,12 +23,31 @@ export {
     isProxy,
 
     toRaw,
-    ReactiveFlags
+    ReactiveFlags,
+
+    markRaw,
+    isShallow
 } from './reactive'
 
-export { effect } from './effect'
+export {
+    effect,
+    track,
+    pauseTracking,
+    resetTracking,
+
+    trigger
+} from './effect'
+
+export {
+    EffectScope,
+  } from './effectScope'
 
 export { computed } from './computed'
+
+export {
+    TrackOpTypes /* @remove */,
+    TriggerOpTypes /* @remove */
+  } from './operations'
 
 const filename = 'reativity/index.ts'
 

@@ -1,6 +1,6 @@
 import { compile } from '@vue/compiler-dom';
 import { parse } from '@vue/compiler-sfc';
-import { registerRuntimeCompiler } from '@vue/runtime-core'
+import { registerRuntimeCompiler } from '@vue/runtime-dom'
 import { NOOP, extend, generateCodeFrame, isString, normalizeClass, toDisplayString } from '@vue/shared'
 
 // 缓存

@@ -57,6 +57,7 @@ function walk(
       // 如果不允许被提升，则赋值 constantType NOT_CONSTANT 不可被提升的标记
       // 否则调用 getConstantType 获取子节点的静态类型
       const constantType = doNotHoistNode ? ConstantTypes.NOT_CONSTANT : getConstantType(child, context)
+      
       // 如果获取到的 constantType 枚举值大于 NOT_CONSTANT
       if (constantType > ConstantTypes.NOT_CONSTANT) {
         // 根据 constantType 枚举值判断是否可以被字符序列化
@@ -94,12 +95,13 @@ function walk(
           
           // 指令 塞到 dynamicProps， @click  
           if (codegenNode.dynamicProps) {
-            console.log(``,333,child,codegenNode);
+            
             codegenNode.dynamicProps = context.hoist(codegenNode.dynamicProps)
           }
         }
       }
     }
+    
     // 循环起来
     if (child.type === NodeTypes.ELEMENT) {
       // 如果子节点的 tagType 是组件，则继续遍历子节点

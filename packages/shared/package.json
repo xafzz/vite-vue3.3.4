@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "@vue/shared",
   "main": "index.js",
+  "module": "dist/shared.esm-bundler.js",
   "devDependencies": {},
   "buildOptions": {
     "name": "VueShared",
     "formats": [
-      "esm-bundler",
-      "cjs"
+      "esm-bundler"
     ]
   },
   "author": "xafzz",

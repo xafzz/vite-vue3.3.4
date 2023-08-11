@@ -42,7 +42,7 @@ export function baseCompile(
 
     const onError = options.onError || defaultOnError
     const isModuleMode = options.mode === 'module'
-
+ 
     // node 端 编译
     // if (__BROWSER__) {
     //     if (options.prefixIdentifiers === true) {
@@ -64,6 +64,8 @@ export function baseCompile(
 
     // 解析template 生成 ast
     const ast = isString(template) ? baseParse(template, options) : template
+
+    // return 
     // 获取节点和指令转换的方法
     const [nodeTransforms, directiveTransforms] = getBaseTransformPreset(prefixIdentifiers)
 
@@ -109,6 +111,7 @@ export function baseCompile(
             )
         })
     )
+    
     return generate(
         ast,
         extend({}, options, {

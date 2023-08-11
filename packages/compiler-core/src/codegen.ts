@@ -23,7 +23,7 @@ export function generate(
     options: any & {
         onContextCreated?: (context: any) => void
     } = {}
-): any {
+): any {    
     // 1、生成一个上下文对象
     const context = createCodegenContext(ast, options)
 
@@ -509,6 +509,7 @@ function genHoists(hoists: any, context) {
 
 // 生成创建 VNode 树的表达式
 function genNode(node: any | symbol | string, context: any) {
+
     // 如果是字符串，直接 push 入代码字符串
     if (isString(node)) {
         context.push(node)
@@ -780,7 +781,7 @@ function genCallExpression(node: any, context: any) {
     push(`)`)
 }
 
-
+// <button @click="click">+1</button>
 function genObjectExpression(node: any, context: any) {
     const { push, indent, deindent, newline } = context
     const { properties } = node
@@ -797,9 +798,11 @@ function genObjectExpression(node: any, context: any) {
     for (let i = 0; i < properties.length; i++) {
         const { key, value } = properties[i]
         // key
+        // @click
         genExpressionAsPropertyKey(key, context)
         push(`: `)
         // value
+        // click
         genNode(value, context)
         if (i < properties.length - 1) {
             // will only reach this if it's multilines

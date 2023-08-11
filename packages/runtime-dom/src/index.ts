@@ -56,7 +56,7 @@ export const createApp = (...args) => {
         container.innerHTML = ''
         // 真正的挂载  是否为svg
         const proxy = mount(container, false, container instanceof SVGAElement)
-        console.warn(``, proxy);
+        console.warn(``, proxy,22,container);
 
         if (container instanceof Element) {
             // 防止闪烁变量名
@@ -141,3 +141,8 @@ function normalizeContainer(container) {
     }
     return container as any
 }
+
+
+// re-export everything from core
+// h, Component, reactivity API, nextTick, flags & types
+export * from '@vue/runtime-core'

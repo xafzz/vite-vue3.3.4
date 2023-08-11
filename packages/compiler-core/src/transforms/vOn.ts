@@ -74,7 +74,7 @@ export const transformOn = (
     const hasMultipleStatements = exp.content.includes(`;`)
 
     // process the expression since it's been skipped
-    if (!__BROWSER__ && context.prefixIdentifiers) {
+    if (context.prefixIdentifiers) { // !__BROWSER__ && 
       isInlineStatement && context.addIdentifiers(`$event`)
       exp = dir.exp = processExpression(
         exp,
@@ -114,7 +114,7 @@ export const transformOn = (
       }
     }
 
-    if (__DEV__ && __BROWSER__) {
+    if (__DEV__ ) { // && __BROWSER__
       validateBrowserExpression(
         exp as any,
         context,
@@ -127,10 +127,10 @@ export const transformOn = (
       // wrap inline statement in a function expression
       exp = createCompoundExpression([
         `${isInlineStatement
-          ? !__BROWSER__ && context.isTS
+          ? context.isTS // !__BROWSER__ &&
             ? `($event: any)`
             : `$event`
-          : `${!__BROWSER__ && context.isTS ? `\n//@ts-ignore\n` : ``
+          : `${context.isTS ? `\n//@ts-ignore\n` : ``  // !__BROWSER__ && 
           }(...args)`
         } => ${hasMultipleStatements ? `{` : `(`}`,
         exp,
